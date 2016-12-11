@@ -1,11 +1,10 @@
 fs = require 'fs'
 path = require 'path'
-Promise = require 'bluebird'
 _ = require 'lodash'
 mkdirp = require 'mkdirp'
-{ repeatString, connect: mongoConnect, normalizeConfig } = require('./utils')
+{ repeatString } = require('./utils')
 migrationStub = require('./migration-stub')
-
+{ MigrationsRunner } = require('./migrations-runner')
 
 defaultLog = (src, args...) ->
   pad = repeatString(' ', if src is 'system' then 4 else 2)
@@ -13,25 +12,13 @@ defaultLog = (src, args...) ->
 
 class Migrator
   constructor: (dbConfig, logFn) ->
-    # this will throw in case of invalid values
-    dbConfig = normalizeConfig(dbConfig)
-
-    @_isDisposed = false
     @_m = []
     @_migrateResult = null
 
-    @_dbReady = new Promise.fromCallback (cb) ->
-      mongoConnect dbConfig, cb
-    .then (db) =>
-      @_db = db
+    if logFn is undefined
+      logFn = defaultLog
 
-    @_collName = dbConfig.collection
-    @_timeout = dbConfig.timeout
-
-    if logFn or logFn is null
-      @log = logFn
-    else
-      @log = defaultLog
+    @_runner = new MigrationsRunner(dbConfig, logFn)
 
   add: (m) ->
     # m must be an { id, up, down } object
@@ -41,119 +28,12 @@ class Migrator
     # array must be an Array of { id, up, down } objects
     @_m = @_m.concat array
 
-  _coll: ->
-    @_db.collection(@_collName)
-
-  _runWhenReady: (migrations, direction, cb, progress) ->
-    if @_isDisposed
-      return cb new Error 'This migrator is disposed and cannot be used anymore'
-    onSuccess = =>
-      @_ranMigrations = {}
-      @_coll().find().toArray (err, docs) =>
-        if err
-          return cb err
-        for doc in docs
-          @_ranMigrations[doc.id] = true
-        @_run migrations, direction, cb, progress
-    onError = (err) ->
-      cb err
-    @_dbReady.then onSuccess, onError
-
-  _run: (migrations, direction, done, progress) ->
-    result = {}
-
-    logFn = @log
-    log = (src) ->
-      (msg) ->
-        logFn?(src, msg)
-    userLog = log('user')
-    systemLog = log('system')
-
-    i = 0
-    l = migrations.length
-    migrationsCollection = @_coll()
-
-    migrationsCollectionUpdatePromises = []
-
-    handleMigrationDone = (id) ->
-      p = if direction == 'up'
-        Promise.fromCallback (cb) ->
-          migrationsCollection.insert { id }, cb
-      else
-        Promise.fromCallback (cb) ->
-          migrationsCollection.deleteOne { id }, cb
-
-      migrationsCollectionUpdatePromises.push(p)
-
-    allDone = (err) ->
-      Promise.all(migrationsCollectionUpdatePromises)
-      .then ->
-        done err, result
-
-    ranMigrations = @_ranMigrations
-    migrationContext = { db: @_db, log: userLog }
-    timeout = @_timeout
-
-    runOne = ->
-      if i >= l
-        return allDone()
-      migration = migrations[i]
-      fn = migration[direction]
-      id = migration.id
-      i += 1
-
-      migrationDone = (res) ->
-        result[id] = res
-        _.defer ->
-          progress?(id, res)
-        msg = "Migration '#{id}': #{res.status}"
-        if res.status == 'skip'
-          msg += " (#{res.reason})"
-        systemLog msg
-        if res.status == 'error'
-          systemLog '  ' + res.error
-        if res.status in [ 'ok', 'skip' ]
-          handleMigrationDone(id)
-
-      skipReason = null
-      if not fn
-        skipReason = "no migration function for direction #{direction}"
-      if direction == 'up' and id of ranMigrations
-        skipReason = "migration already ran"
-      if direction == 'down' and id not of ranMigrations
-        skipReason = "migration wasn't ran before"
-      if skipReason
-        migrationDone status: 'skip', reason: skipReason
-        return runOne()
-
-      isCallbackCalled = false
-      if timeout
-        timeoutId = setTimeout () ->
-          isCallbackCalled = true
-          err = new Error "migration timed-out"
-          migrationDone status: 'error', error: err
-          allDone(err)
-        , timeout
-
-      fn.call migrationContext, (err) ->
-        return if isCallbackCalled
-        clearTimeout timeoutId
-
-        if err
-          migrationDone status: 'error', error: err
-          allDone(err)
-        else
-          migrationDone status: 'ok'
-          runOne()
-
-    runOne()
-
   migrate: (done, progress) ->
     @_migrateResult = null
     _done = (err, result) =>
       @_migrateResult = result
       done(err, result)
-    @_runWhenReady @_m, 'up', _done, progress
+    @_runner.runUp @_m, _done, progress
     return
 
   rollback: (done, progress) ->
@@ -163,11 +43,10 @@ class Migrator
       return done new Error('Rollback can only be ran after migrate')
     @_migrateResult = null
 
-
     migrations = @_m.reverse()
       .filter (m) -> (status = result[m.id]?.status) and status != 'skip'
 
-    @_runWhenReady migrations, 'down', done, progress
+    @_runner.runDown migrations, done, progress
     return
 
   _loadMigrationFiles: (dir, cb) ->
@@ -214,13 +93,6 @@ class Migrator
       fs.writeFile fileName, body, done
 
   dispose: (cb) ->
-    @_isDisposed = true
-    onSuccess = =>
-      try
-        @_db.close()
-        cb?(null)
-      catch e
-        cb?(e)
-    @_dbReady.then onSuccess, cb
+    @_runner.dispose(cb)
 
 module.exports.Migrator = Migrator

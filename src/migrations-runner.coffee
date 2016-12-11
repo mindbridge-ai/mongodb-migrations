@@ -1,0 +1,142 @@
+Promise = require 'bluebird'
+_ = require 'lodash'
+{ connect: mongoConnect, normalizeConfig } = require('./utils')
+
+class MigrationsRunner
+  constructor: (dbConfig, @log = _.noop) ->
+    # this will throw in case of invalid values
+    dbConfig = normalizeConfig(dbConfig)
+
+    @_isDisposed = false
+
+    @_dbReady = new Promise.fromCallback (cb) ->
+      mongoConnect dbConfig, cb
+    .then (db) =>
+      @_db = db
+
+    @_collName = dbConfig.collection
+    @_timeout = dbConfig.timeout
+
+  _coll: ->
+    @_db.collection(@_collName)
+
+  _runWhenReady: (migrations, direction, cb, progress) ->
+    if @_isDisposed
+      return cb new Error 'This migrator is disposed and cannot be used anymore'
+    onSuccess = =>
+      ranMigrations = {}
+      @_coll().find().toArray (err, docs) =>
+        if err
+          return cb err
+        for doc in docs
+          ranMigrations[doc.id] = true
+        @_run ranMigrations, migrations, direction, cb, progress
+    onError = (err) ->
+      cb err
+    @_dbReady.then onSuccess, onError
+
+  _run: (ranMigrations, migrations, direction, done, progress) ->
+    result = {}
+
+    logFn = @log
+    log = (src) ->
+      (msg) ->
+        logFn?(src, msg)
+    userLog = log('user')
+    systemLog = log('system')
+
+    i = 0
+    l = migrations.length
+    migrationsCollection = @_coll()
+
+    migrationsCollectionUpdatePromises = []
+
+    handleMigrationDone = (id) ->
+      p = if direction == 'up'
+        Promise.fromCallback (cb) ->
+          migrationsCollection.insert { id }, cb
+      else
+        Promise.fromCallback (cb) ->
+          migrationsCollection.deleteOne { id }, cb
+
+      migrationsCollectionUpdatePromises.push(p)
+
+    allDone = (err) ->
+      Promise.all(migrationsCollectionUpdatePromises)
+      .then ->
+        done err, result
+
+    migrationContext = { db: @_db, log: userLog }
+    timeout = @_timeout
+
+    runOne = ->
+      if i >= l
+        return allDone()
+      migration = migrations[i]
+      fn = migration[direction]
+      id = migration.id
+      i += 1
+
+      migrationDone = (res) ->
+        result[id] = res
+        _.defer ->
+          progress?(id, res)
+        msg = "Migration '#{id}': #{res.status}"
+        if res.status == 'skip'
+          msg += " (#{res.reason})"
+        systemLog msg
+        if res.status == 'error'
+          systemLog '  ' + res.error
+        if res.status in [ 'ok', 'skip' ]
+          handleMigrationDone(id)
+
+      skipReason = null
+      if not fn
+        skipReason = "no migration function for direction #{direction}"
+      if direction == 'up' and id of ranMigrations
+        skipReason = "migration already ran"
+      if direction == 'down' and id not of ranMigrations
+        skipReason = "migration wasn't ran before"
+      if skipReason
+        migrationDone status: 'skip', reason: skipReason
+        return runOne()
+
+      isCallbackCalled = false
+      if timeout
+        timeoutId = setTimeout () ->
+          isCallbackCalled = true
+          err = new Error "migration timed-out"
+          migrationDone status: 'error', error: err
+          allDone(err)
+        , timeout
+
+      fn.call migrationContext, (err) ->
+        return if isCallbackCalled
+        clearTimeout timeoutId
+
+        if err
+          migrationDone status: 'error', error: err
+          allDone(err)
+        else
+          migrationDone status: 'ok'
+          runOne()
+
+    runOne()
+
+  runUp: (migrations, done, progress) ->
+    @_runWhenReady migrations, 'up', done, progress
+
+  runDown: (migrations, done, progress) ->
+    @_runWhenReady migrations, 'down', done, progress
+
+  dispose: (cb) ->
+    @_isDisposed = true
+    onSuccess = =>
+      try
+        @_db.close()
+        cb?(null)
+      catch e
+        cb?(e)
+    @_dbReady.then onSuccess, cb
+
+module.exports.MigrationsRunner = MigrationsRunner
