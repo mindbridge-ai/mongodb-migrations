@@ -70,7 +70,6 @@ describe 'Migrator', ->
       return done(err) if err
       migrator.rollback (err, res) ->
         return done(err) if err
-        console.log res
         coll.find({name: 'tobi'}).count (err, count) ->
           return done(err) if err
           count.should.be.equal 0
