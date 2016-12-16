@@ -59,12 +59,12 @@
     return path.join(dir, config.directory);
   };
 
-  createMigrator = function() {
+  createMigrator = function(opts) {
     readConfig(opts.config);
     return new Migrator(config);
   };
 
-  createRunner = function() {
+  createRunner = function(opts) {
     readConfig(opts.config);
     return new MigrationsRunner(config);
   };
@@ -77,26 +77,29 @@
     if (opts.migrations) {
       return runSpecificUp(opts);
     }
-    return createRunner().runUpFromDir(cwd(), exit);
+    return createRunner(opts).runUpFromDir(cwd(), exit);
   };
 
   runSpecificUp = function(opts) {
     var migrations;
-    migrations = opts._;
-    return createRunner().runSpecificUpFromDir(cwd(), migrations, exit);
+    migrations = opts._.slice(1);
+    return createRunner(opts).runSpecificUpFromDir(cwd(), migrations, exit);
   };
 
   runDown = function(opts) {
     if (opts.migrations) {
       return runSpecificUp(opts);
     }
-    return createRunner().runDownFromDir(cwd(), exit);
+    return createRunner(opts).runDownFromDir(cwd(), exit);
   };
 
   runSpecificDown = function(opts) {
     var migrations;
-    migrations = opts.inverse ? opts._.reverse() : opts._;
-    return createRunner().runSpecificDownFromDir(cwd(), migrations, exit);
+    migrations = opts._.slice(1);
+    if (opts.inverse) {
+      migrations = migrations.reverse();
+    }
+    return createRunner(opts).runSpecificDownFromDir(cwd(), migrations, exit);
   };
 
   createMigration = function(opts) {
@@ -106,7 +109,7 @@
     if (!id) {
       exit("Migration ID is required");
     }
-    return createMigrator().create(cwd(), id, exit, opts.coffee);
+    return createMigrator(opts).create(cwd(), id, exit, opts.coffee);
   };
 
   exit = function(msg, err) {
@@ -141,7 +144,7 @@
     help: "Run specific migrations. Migrations can be identified by their\nnumbers (12), IDs (my-migration), or filenames (12-my-migration.js)."
   }).option('inverse', {
     abbr: 'i',
-    flag: trur,
+    flag: true,
     help: "Run migrations in reverse order.\nHandy, because `mm up --migrations X Y Z && mm down --inverse --migrations X Y Z`\nis noop (asuming the down migrations are properly implemented).\nIt's the same as `mm up --migrations X Y Z && mm down --migrations Z Y X`"
   }).callback(runDown);
 

@@ -40,11 +40,11 @@ readConfig = (fileName) ->
 cwd = ->
   path.join dir, config.directory
 
-createMigrator = ->
+createMigrator = (opts)  ->
   readConfig opts.config
   new Migrator config
 
-createRunner = ->
+createRunner = (opts) ->
   readConfig opts.config
   new MigrationsRunner config
 
@@ -54,30 +54,29 @@ runMigrations = (opts) ->
 runUp = (opts) ->
   if opts.migrations
     return runSpecificUp(opts)
-  createRunner().runUpFromDir cwd(), exit
+  createRunner(opts).runUpFromDir cwd(), exit
 
 runSpecificUp = (opts) ->
-  migrations = opts._
-  createRunner().runSpecificUpFromDir cwd(), migrations, exit
+  migrations = opts._[1..] # strip the "up" word that's also part of this array
+  createRunner(opts).runSpecificUpFromDir cwd(), migrations, exit
 
 runDown = (opts) ->
   if opts.migrations
     return runSpecificUp(opts)
-  createRunner().runDownFromDir cwd(), exit
+  createRunner(opts).runDownFromDir cwd(), exit
 
 runSpecificDown = (opts) ->
-  migrations = if opts.inverse
-    opts._.reverse()
-  else
-    opts._
-  createRunner().runSpecificDownFromDir cwd(), migrations, exit
+  migrations = opts._[1..] # strip the "down" word that's also part of this array
+  if opts.inverse
+    migrations = migrations.reverse()
+  createRunner(opts).runSpecificDownFromDir cwd(), migrations, exit
 
 createMigration = (opts) ->
   readConfig opts.config
   id = opts._[1..].join ' '
   if not id
     exit "Migration ID is required"
-  createMigrator().create cwd(), id, exit, opts.coffee
+  createMigrator(opts).create cwd(), id, exit, opts.coffee
 
 exit = (msg, err) ->
   if msg
@@ -126,7 +125,7 @@ optparser
     """
   .option 'inverse',
     abbr: 'i'
-    flag: trur
+    flag: true
     help: """
       Run migrations in reverse order.
       Handy, because `mm up --migrations X Y Z && mm down --inverse --migrations X Y Z`
