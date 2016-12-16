@@ -6,8 +6,7 @@ optparser = require('nomnom')
 _ = require('lodash')
 debug = !!process.env.DEBUG
 
-mm = require('..')
-Migrator = mm.Migrator
+{ Migrator, MigrationsRunner } = require('..')
 
 defaults =
   directory: "migrations"
@@ -42,11 +41,36 @@ cwd = ->
   path.join dir, config.directory
 
 createMigrator = ->
+  readConfig opts.config
   new Migrator config
 
-runMigrations = (opts) ->
+createRunner = ->
   readConfig opts.config
-  createMigrator().runFromDir cwd(), exit
+  new MigrationsRunner config
+
+runMigrations = (opts) ->
+  createMigrator(opts).runFromDir cwd(), exit
+
+runUp = (opts) ->
+  if opts.migrations
+    return runSpecificUp(opts)
+  createRunner().runUpFromDir cwd(), exit
+
+runSpecificUp = (opts) ->
+  migrations = opts._
+  createRunner().runSpecificUpFromDir cwd(), migrations, exit
+
+runDown = (opts) ->
+  if opts.migrations
+    return runSpecificUp(opts)
+  createRunner().runDownFromDir cwd(), exit
+
+runSpecificDown = (opts) ->
+  migrations = if opts.inverse
+    opts._.reverse()
+  else
+    opts._
+  createRunner().runSpecificDownFromDir cwd(), migrations, exit
 
 createMigration = (opts) ->
   readConfig opts.config
@@ -79,6 +103,37 @@ optparser
 optparser
   .nocommand()
   .callback runMigrations
+
+optparser
+  .command 'up'
+  .option 'migrations',
+    abbr: 'm'
+    flag: true
+    help: """
+      Run specific migrations. Migrations can be identified by their
+      numbers (12), IDs (my-migration), or filenames (12-my-migration.js).
+    """
+  .callback runUp
+
+optparser
+  .command 'down'
+  .option 'migrations',
+    abbr: 'm'
+    flag: true
+    help: """
+      Run specific migrations. Migrations can be identified by their
+      numbers (12), IDs (my-migration), or filenames (12-my-migration.js).
+    """
+  .option 'inverse',
+    abbr: 'i'
+    flag: trur
+    help: """
+      Run migrations in reverse order.
+      Handy, because `mm up --migrations X Y Z && mm down --inverse --migrations X Y Z`
+      is noop (asuming the down migrations are properly implemented).
+      It's the same as `mm up --migrations X Y Z && mm down --migrations Z Y X`
+    """
+  .callback runDown
 
 optparser
   .command 'create'
