@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "coffeescript": "^2.5.1",
-    "mocha": "^3.2.0",
+    "mocha": "^10.2.0",
     "rimraf": "^2.5.3",
     "should": "^11.1.2"
   }
