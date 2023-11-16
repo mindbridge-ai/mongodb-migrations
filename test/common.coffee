@@ -7,6 +7,9 @@ config =
   db: '_mm'
   collection: '_migrations'
   timeout: 200
+  # Ignore replicaset hostnames when running locally in a container
+  options:
+    directConnection: true
 
 module.exports =
   config: config
