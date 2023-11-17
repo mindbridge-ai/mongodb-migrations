@@ -6,7 +6,7 @@
   "scripts": {
     "build": "coffee --compile --output lib src",
     "prepublish": "npm run build",
-    "test": "mocha --compilers coffee:coffeescript/register -r should --timeout 20000",
+    "test": "mocha --compilers coffee:coffeescript/register -r should",
     "dev": "coffee --watch --compile --output lib src"
   },
   "repository": {
