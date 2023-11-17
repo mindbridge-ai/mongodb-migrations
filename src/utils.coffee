@@ -10,20 +10,20 @@ DEFAULT_COLLECTION = '_migrations'
 exports._buildOptions = _buildOptions = (config) ->
   options = config.options || {}
 
-  { poolSize } = config
-  if poolSize?
+  { maxPoolSize } = config
+  if maxPoolSize?
     console.warn('''
-      The `poolSize` config param is deprecated.
-      Use `options: { poolSize: poolSize }` instead.
+      The `maxPoolSize` config param is deprecated.
+      Use `options: { maxPoolSize: maxPoolSize }` instead.
     ''')
-    if _.get(options, 'server.poolSize') || _.get(options, 'poolSize')
+    if _.get(options, 'server.maxPoolSize') || _.get(options, 'maxPoolSize')
       console.warn('''
-        The `poolSize` is overriding the `options: { poolSize: poolSize }` value.
+        The `maxPoolSize` is overriding the `options: { maxPoolSize: maxPoolSize }` value.
       ''')
-    _.set(options, 'poolSize', poolSize)
+    _.set(options, 'maxPoolSize', maxPoolSize)
 
-  if not _.get(options, 'poolSize') && not _.get(options, 'server.poolSize')
-    _.set(options, 'poolSize', DEFAULT_POOL_SIZE)
+  if not _.get(options, 'maxPoolSize') && not _.get(options, 'server.maxPoolSize')
+    _.set(options, 'maxPoolSize', DEFAULT_POOL_SIZE)
 
   return options
 
