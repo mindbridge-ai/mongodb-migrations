@@ -6,12 +6,10 @@ describe 'Migrator', ->
   db = null
   coll = null
 
-  beforeEach (done) ->
-    testsCommon.beforeEach (res) ->
-      {migrator, db} = res
-      coll = db.collection 'test'
-      coll.deleteMany {}, ->
-        done()
+  beforeEach ->
+    {migrator, db} = await testsCommon.beforeEach()
+    coll = db.collection 'test'
+    await coll.deleteMany {}
 
   it 'should exist', (done) ->
     migrator.should.be.ok()

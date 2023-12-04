@@ -6,12 +6,10 @@ describe 'Migrator Errors Handling', ->
   db = null
   coll = null
 
-  beforeEach (done) ->
-    testsCommon.beforeEach (res) ->
-      {migrator, db} = res
-      coll = db.collection 'test'
-      coll.deleteMany {}, ->
-        done()
+  beforeEach ->
+    {migrator, db} = await testsCommon.beforeEach()
+    coll = db.collection 'test'
+    coll.deleteMany {}
 
   it 'should run migrations and stop on the first error', (done) ->
     migrator.add
@@ -32,7 +30,6 @@ describe 'Migrator Errors Handling', ->
         cb null
     migrator.migrate (err, res) ->
       err.toString().should.endWith 'Some error'
-
       res.should.be.ok()
 
       res['1'].should.be.ok()
