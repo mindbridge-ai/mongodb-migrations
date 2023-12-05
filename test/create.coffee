@@ -1,6 +1,6 @@
 path = require 'path'
 fs = require 'fs'
-rimraf = require 'rimraf'
+{ rimraf } = require 'rimraf'
 mm = require '../src/mongodb-migrations'
 testsCommon = require './common'
 
@@ -8,10 +8,9 @@ describe 'Migrations Builder', ->
   migrator = null
   dir = path.join __dirname, 'created-migrations'
 
-  beforeEach (done) ->
-    testsCommon.beforeEach (res) ->
-      { migrator } = res
-      rimraf dir, done
+  beforeEach ->
+    { migrator } = await testsCommon.beforeEach()
+    await rimraf dir
 
   it 'should create migration stubs for JS', (done) ->
 

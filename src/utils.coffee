@@ -1,4 +1,4 @@
-{ MongoClient } = require('mongodb')
+{ MongoClient } = require('mongodb-legacy')
 urlBuilder = require('./url-builder')
 _ = require('lodash')
 

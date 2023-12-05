@@ -14,12 +14,9 @@ config =
 module.exports =
   config: config
 
-  beforeEach: (done) ->
-    mongoConnect config, (err, client) ->
-      if err
-        console.error err
-        throw err
-      db = client.db()
-      db.collection(config.collection).deleteMany {}, ->
-        migrator = new mm.Migrator config, null
-        done { migrator, db, config }
+  beforeEach: ->
+    client = await mongoConnect config
+    db = client.db()
+    await db.collection(config.collection).deleteMany {}
+    migrator = new mm.Migrator config, null
+    return { migrator, db, config }

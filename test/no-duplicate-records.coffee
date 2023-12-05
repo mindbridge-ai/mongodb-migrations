@@ -7,13 +7,11 @@ describe 'Migrations Collection', ->
   coll = null
   migrationColl = null
 
-  beforeEach (done) ->
-    testsCommon.beforeEach (res) ->
-      {migrator, db, config} = res
-      migrationColl = db.collection(config.collection)
-      coll = db.collection 'test'
-      coll.deleteMany {}, ->
-        done()
+  beforeEach ->
+    {migrator, db, config} = await testsCommon.beforeEach()
+    migrationColl = db.collection(config.collection)
+    coll = db.collection 'test'
+    await coll.deleteMany {}
 
   it 'should run migrations and only record them once', (done) ->
     migrator.add
