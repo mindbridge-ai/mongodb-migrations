@@ -4,12 +4,10 @@
   "description": "A migration framework for MongoDB",
   "main": "lib/mongodb-migrations.js",
   "scripts": {
-    "build": "npm run build:ts && npm run build:coffee",
-    "build:coffee": "coffee --compile --output lib src",
-    "build:ts": "tsc",
+    "build": "tsc",
     "prepublish": "npm run build",
-    "test": "mocha -r ts-node/register --compilers coffee:coffeescript/register -r should --timeout 2000 \"test/**/*.{coffee,ts}\"",
-    "dev": "concurrently \"tsc --watch\" \"coffee --watch --compile --output lib src\""
+    "test": "mocha -r ts-node/register -r should --timeout 2000 \"test/**/*.ts\"",
+    "dev": "tsc --watch"
   },
   "repository": {
     "type": "git",
@@ -40,8 +38,6 @@
     "@types/lodash": "^4.17.16",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.15.19",
-    "coffeescript": "^2.5.1",
-    "concurrently": "^9.1.2",
     "mocha": "^3.2.0",
     "rimraf": "^5.0.5",
     "should": "^13.2.3",
