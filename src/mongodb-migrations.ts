@@ -18,9 +18,14 @@ const defaultLog = (src: LogLevel, ...args: any[]): void => {
   console.log(pad, ...args);
 };
 
-interface MigrationFunction {
-  (done: (error?: Error) => void): Promise<void> | void;
-}
+type MigrationCallback = (error?: Error) => void;
+
+// A migration function can either:
+// 1. Return a Promise<void>
+// 2. Accept a callback parameter
+type MigrationFunction = 
+  | ((this: MigrationContext) => Promise<void>)
+  | ((this: MigrationContext, done: MigrationCallback) => void);
 
 interface Migration {
   id: string;
@@ -247,7 +252,9 @@ export class Migrator {
 
       const context: MigrationContext = { db: this._db, log: userLog, client: this._client };
 
-      const donePromise = fn!.call(context, (err?: Error) => {
+      // We don't know if it's a promise or callback, so cast to a function with a return value of any
+      const migrationFnWithUnknownReturn = fn as (this: MigrationContext, done: MigrationCallback) => any;
+      const donePromise = migrationFnWithUnknownReturn.call(context, (err?: Error) => {
         didExecuteCallback = true;
 
         if (didTimeout) return;

@@ -1,10 +1,10 @@
 import Promise from 'bluebird';
+import { Db, MongoClient } from 'mongodb-legacy';
 import { MongoConfig } from './url-builder';
 type LogLevel = 'system' | 'user';
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
-interface MigrationFunction {
-    (done: (error?: Error) => void): Promise<void> | void;
-}
+type MigrationCallback = (error?: Error) => void;
+type MigrationFunction = ((this: MigrationContext) => Promise<void>) | ((this: MigrationContext, done: MigrationCallback) => void);
 interface Migration {
     id: string;
     up?: MigrationFunction;
@@ -19,6 +19,11 @@ interface MigrationResult {
 }
 interface MigrationResults {
     [key: string]: MigrationResult;
+}
+interface MigrationContext {
+    db: Db;
+    log: (message: string) => void;
+    client: MongoClient;
 }
 export declare class Migrator {
     private _isDisposed;
