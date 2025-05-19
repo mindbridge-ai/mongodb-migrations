@@ -296,51 +296,38 @@ export class Migrator {
     this._runWhenReady('down', done, progress);
   }
 
-  private _loadMigrationFiles(dir: string, cb: (error?: Error, files?: Array<{ number: number | null; module: any }>) => void): void {
-    try {
-      fs.mkdirSync(dir, { recursive: true, mode: 0o0774 });
-      fs.readdir(dir, (err: Error | null, files: string[]) => {
-        if (err) {
-          return cb(err);
-        }
-        const processed = files
-          .filter((f) => ['.js', '.coffee'].includes(path.extname(f)) && !f.startsWith('.'))
-          .map((f) => {
-            const n = f.match(/^(\d+)/)?.[1];
-            const number = n ? parseInt(n, 10) : null;
-            return { number, name: f };
-          })
-          .filter((f) => !!f.name)
-          .sort((f1, f2) => (f1.number || 0) - (f2.number || 0))
-          .map((f) => {
-            const fileName = path.join(dir, f.name);
-            if (fileName.match(/\.coffee$/)) {
-              require('coffeescript/register');
-            }
-            return { number: f.number, module: require(fileName) };
-          });
-        cb(undefined, processed);
+  private _loadMigrationFiles(dir: string): Array<{ number: number | null; module: any }> {
+    fs.mkdirSync(dir, { recursive: true, mode: 0o0774 });
+    const files = fs.readdirSync(dir);
+    
+    return files
+      .filter((f) => ['.js', '.coffee'].includes(path.extname(f)) && !f.startsWith('.'))
+      .map((f) => {
+        const n = f.match(/^(\d+)/)?.[1];
+        const number = n ? parseInt(n, 10) : null;
+        return { number, name: f };
+      })
+      .filter((f) => !!f.name)
+      .sort((f1, f2) => (f1.number || 0) - (f2.number || 0))
+      .map((f) => {
+        const fileName = path.join(dir, f.name);
+        return { number: f.number, module: require(fileName) };
       });
-    } catch (err) {
-      cb(err as Error);
-    }
   }
 
   runFromDir(dir: string, done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void {
-    this._loadMigrationFiles(dir, (err, files) => {
-      if (err) {
-        return done(err);
-      }
+    try {
+      const files = this._loadMigrationFiles(dir);
       this.bulkAdd(_.map(files, 'module'));
       this.migrate(done, progress);
-    });
+    } catch (err) {
+      done(err as Error);
+    }
   }
 
   create(dir: string, id: string, done: (error?: Error) => void, coffeeScript: boolean = false): void {
-    this._loadMigrationFiles(dir, (err, files) => {
-      if (err) {
-        return done(err);
-      }
+    try {
+      const files = this._loadMigrationFiles(dir);
       const maxNum = _.maxBy(files, 'number')?.number ?? 0;
       const nextNum = maxNum + 1;
       const slug = (id || '').toLowerCase().replace(/\s+/, '-');
@@ -348,7 +335,9 @@ export class Migrator {
       const fileName = path.join(dir, `${nextNum}-${slug}.${ext}`);
       const body = migrationStub(id, coffeeScript);
       fs.writeFile(fileName, body, (err) => done(err || undefined));
-    });
+    } catch (err) {
+      done(err as Error);
+    }
   }
 
   async dispose(): Promise<void> {
