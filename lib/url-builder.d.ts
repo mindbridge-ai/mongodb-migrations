@@ -15,6 +15,9 @@ export interface MongoConfig {
     replicaset?: ReplicasetConfig;
     ssl?: boolean;
     authDatabase?: string;
+    collection?: string;
+    timeout?: number;
+    options?: Record<string, any>;
 }
 export declare function buildMongoConnString(config: MongoConfig): string;
 export {};

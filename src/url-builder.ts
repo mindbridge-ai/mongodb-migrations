@@ -15,6 +15,9 @@ export interface MongoConfig {
   replicaset?: ReplicasetConfig;
   ssl?: boolean;
   authDatabase?: string;
+  collection?: string;
+  timeout?: number;
+  options?: Record<string, any>;
 }
 
 function buildHost(opts: { host: string; port?: number }): string {
