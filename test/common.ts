@@ -3,7 +3,7 @@ import { connect as mongoConnect } from '../lib/utils';
 import { Db, MongoClient } from 'mongodb-legacy';
 import { MongoConfig } from '../src/url-builder';
 
-const config: MongoConfig = {
+export const config: MongoConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: 27017,
   db: '_mm',

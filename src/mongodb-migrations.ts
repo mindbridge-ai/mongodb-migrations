@@ -10,7 +10,7 @@ import { mkdirp } from 'mkdirp';
 // Import migration stub as a require since it uses module.exports
 const migrationStub = require('./migration-stub');
 
-type LogLevel = 'system' | 'user';
+export type LogLevel = 'system' | 'user';
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
 
 const defaultLog = (src: LogLevel, ...args: any[]): void => {
