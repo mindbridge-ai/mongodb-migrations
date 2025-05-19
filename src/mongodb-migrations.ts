@@ -4,7 +4,6 @@ import _ from 'lodash';
 import { Db, Collection, MongoClient, Document, WithId, AnyError, Callback, InsertOneResult, DeleteResult } from 'mongodb-legacy';
 import { repeatString, connect as mongoConnect, normalizeConfig } from './utils';
 import { MongoConfig } from './url-builder';
-import { mkdirp } from 'mkdirp';
 
 // Import migration stub as a require since it uses module.exports
 const migrationStub = require('./migration-stub');
@@ -298,7 +297,8 @@ export class Migrator {
   }
 
   private _loadMigrationFiles(dir: string, cb: (error?: Error, files?: Array<{ number: number | null; module: any }>) => void): void {
-    mkdirp(dir, { mode: 0o0774 }).then(() => {
+    try {
+      fs.mkdirSync(dir, { recursive: true, mode: 0o0774 });
       fs.readdir(dir, (err: Error | null, files: string[]) => {
         if (err) {
           return cb(err);
@@ -321,7 +321,9 @@ export class Migrator {
           });
         cb(undefined, processed);
       });
-    }, cb);
+    } catch (err) {
+      cb(err as Error);
+    }
   }
 
   runFromDir(dir: string, done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void {

@@ -28,7 +28,6 @@
   "homepage": "https://github.com/emirotin/mongodb-migrations",
   "dependencies": {
     "lodash": "^4.13.0",
-    "mkdirp": "^3.0.1",
     "mongodb": "^6.3.0",
     "mongodb-legacy": "^6.1.3"
   },
