@@ -2,7 +2,7 @@ path = require 'path'
 fs = require 'fs'
 { rimraf } = require 'rimraf'
 mm = require '../src/mongodb-migrations'
-testsCommon = require './common'
+testsCommon = require('./common').default
 
 describe 'Migrations Builder', ->
   migrator = null

@@ -8,7 +8,7 @@ import { MongoConfig } from './url-builder';
 import { mkdirp } from 'mkdirp';
 
 // Import migration stub as a require since it uses module.exports
-const migrationStub = require('../lib/migration-stub');
+const migrationStub = require('./migration-stub');
 
 type LogLevel = 'system' | 'user';
 type LogFunction = ((level: LogLevel, message: string) => void) | null;

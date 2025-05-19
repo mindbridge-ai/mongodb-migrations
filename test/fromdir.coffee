@@ -1,6 +1,6 @@
 path = require 'path'
 mm = require '../src/mongodb-migrations'
-testsCommon = require './common'
+testsCommon = require('./common').default
 
 describe 'Migrator from Directory', ->
   migrator = null

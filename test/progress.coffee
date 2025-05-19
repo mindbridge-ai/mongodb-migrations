@@ -1,5 +1,5 @@
 mm = require '../src/mongodb-migrations'
-testsCommon = require './common'
+testsCommon = require('./common').default
 
 describe 'Migrator Progress Reporting', ->
   it 'should call back the progress parameter', (done) ->
