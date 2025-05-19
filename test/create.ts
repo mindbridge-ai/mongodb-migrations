@@ -27,12 +27,4 @@ describe('Migrations Builder', () => {
       });
     });
   });
-
-  it('should create migration stubs for Coffee', (done: Mocha.Done) => {
-    migrator.create(dir, 'test1', (err) => {
-      if (err) return done(err);
-      fs.existsSync(path.join(dir, '1-test1.coffee')).should.be.ok();
-      done();
-    }, true);
-  });
 });

@@ -301,7 +301,7 @@ export class Migrator {
     const files = fs.readdirSync(dir);
     
     return files
-      .filter((f) => ['.js', '.coffee'].includes(path.extname(f)) && !f.startsWith('.'))
+      .filter((f) => ['.js'].includes(path.extname(f)) && !f.startsWith('.'))
       .map((f) => {
         const n = f.match(/^(\d+)/)?.[1];
         const number = n ? parseInt(n, 10) : null;
@@ -325,15 +325,15 @@ export class Migrator {
     }
   }
 
-  create(dir: string, id: string, done: (error?: Error) => void, coffeeScript: boolean = false): void {
+  create(dir: string, id: string, done: (error?: Error) => void): void {
     try {
       const files = this._loadMigrationFiles(dir);
       const maxNum = _.maxBy(files, 'number')?.number ?? 0;
       const nextNum = maxNum + 1;
       const slug = (id || '').toLowerCase().replace(/\s+/, '-');
-      const ext = coffeeScript ? 'coffee' : 'js';
+      const ext = 'js';
       const fileName = path.join(dir, `${nextNum}-${slug}.${ext}`);
-      const body = migrationStub(id, coffeeScript);
+      const body = migrationStub(id);
       fs.writeFile(fileName, body, (err) => done(err || undefined));
     } catch (err) {
       done(err as Error);
