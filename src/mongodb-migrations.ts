@@ -325,19 +325,15 @@ export class Migrator {
     }
   }
 
-  create(dir: string, id: string, done: (error?: Error) => void): void {
-    try {
-      const files = this._loadMigrationFiles(dir);
-      const maxNum = _.maxBy(files, 'number')?.number ?? 0;
-      const nextNum = maxNum + 1;
-      const slug = (id || '').toLowerCase().replace(/\s+/, '-');
-      const ext = 'js';
-      const fileName = path.join(dir, `${nextNum}-${slug}.${ext}`);
-      const body = migrationStub(id);
-      fs.writeFile(fileName, body, (err) => done(err || undefined));
-    } catch (err) {
-      done(err as Error);
-    }
+  create(dir: string, id: string): void {
+    const files = this._loadMigrationFiles(dir);
+    const maxNum = _.maxBy(files, 'number')?.number ?? 0;
+    const nextNum = maxNum + 1;
+    const slug = (id || '').toLowerCase().replace(/\s+/, '-');
+    const ext = 'js';
+    const fileName = path.join(dir, `${nextNum}-${slug}.${ext}`);
+    const body = migrationStub(id);
+    fs.writeFileSync(fileName, body);
   }
 
   async dispose(): Promise<void> {

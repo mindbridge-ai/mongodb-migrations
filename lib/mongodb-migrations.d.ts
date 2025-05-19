@@ -46,7 +46,7 @@ export declare class Migrator {
     rollback(done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void;
     private _loadMigrationFiles;
     runFromDir(dir: string, done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void;
-    create(dir: string, id: string, done: (error?: Error) => void): void;
+    create(dir: string, id: string): void;
     dispose(): Promise<void>;
 }
 export {};
