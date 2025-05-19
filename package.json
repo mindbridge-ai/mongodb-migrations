@@ -8,7 +8,7 @@
     "build:coffee": "coffee --compile --output lib src",
     "build:ts": "tsc",
     "prepublish": "npm run build",
-    "test": "mocha --compilers coffee:coffeescript/register -r should --timeout 2000",
+    "test": "mocha -r ts-node/register --compilers coffee:coffeescript/register -r should --timeout 2000 \"test/**/*.{coffee,ts}\"",
     "dev": "concurrently \"tsc --watch\" \"coffee --watch --compile --output lib src\""
   },
   "repository": {
@@ -37,12 +37,14 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.17.16",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^22.15.19",
     "coffeescript": "^2.5.1",
     "concurrently": "^9.1.2",
     "mocha": "^3.2.0",
     "rimraf": "^5.0.5",
-    "should": "^11.1.2",
+    "should": "^13.2.3",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
 }
