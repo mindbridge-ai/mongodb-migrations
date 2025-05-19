@@ -3,7 +3,7 @@ path = require 'path'
 Promise = require 'bluebird'
 _ = require 'lodash'
 mkdirp = require 'mkdirp'
-{ repeatString, connect: mongoConnect, normalizeConfig } = require('./utils')
+{ repeatString, connect: mongoConnect, normalizeConfig } = require('../lib/utils')
 migrationStub = require('./migration-stub')
 
 

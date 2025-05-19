@@ -1,5 +1,5 @@
 mm = require '../src/mongodb-migrations'
-mongoConnect = require('../src/utils').connect
+mongoConnect = require('../lib/utils').connect
 
 config =
   host: process.env.DB_HOST || 'localhost'
