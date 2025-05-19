@@ -1,7 +1,7 @@
 import 'mocha';
 import 'should';
 import { Migrator } from '../src/mongodb-migrations';
-import testsCommon from './common';
+import { config } from './common';
 
 describe('Migrator Logging', () => {
   it('should allow custom logging', (done: Mocha.Done) => {
@@ -12,7 +12,7 @@ describe('Migrator Logging', () => {
       }
     };
 
-    const migrator = new Migrator(testsCommon.config, log);
+    const migrator = new Migrator(config, log);
 
     migrator.add({
       id: '1',

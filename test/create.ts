@@ -4,14 +4,14 @@ import path from 'path';
 import fs from 'fs';
 import { rimraf } from 'rimraf';
 import { Migrator } from '../src/mongodb-migrations';
-import testsCommon from './common';
+import { beforeEach as commonBeforeEach } from './common';
 
 describe('Migrations Builder', () => {
   let migrator: Migrator;
   const dir = path.join(__dirname, 'created-migrations');
 
   beforeEach(async () => {
-    ({ migrator } = await testsCommon.beforeEach());
+    ({ migrator } = await commonBeforeEach());
     await rimraf(dir);
   });
 

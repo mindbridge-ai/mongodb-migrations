@@ -3,7 +3,7 @@ import 'should';
 import path from 'path';
 import { Collection, Db } from 'mongodb-legacy';
 import { Migrator } from '../src/mongodb-migrations';
-import testsCommon from './common';
+import { beforeEach as commonBeforeEach } from './common';
 
 describe('Migrator Rollback', () => {
   let migrator: Migrator;
@@ -11,7 +11,7 @@ describe('Migrator Rollback', () => {
   let coll: Collection;
 
   beforeEach(async () => {
-    ({ migrator, db } = await testsCommon.beforeEach());
+    ({ migrator, db } = await commonBeforeEach());
     coll = db.collection('test');
     await coll.deleteMany({});
   });

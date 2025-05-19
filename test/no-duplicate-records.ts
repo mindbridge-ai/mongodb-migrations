@@ -2,7 +2,7 @@ import 'mocha';
 import 'should';
 import { Collection, Db } from 'mongodb-legacy';
 import { Migrator } from '../src/mongodb-migrations';
-import testsCommon from './common';
+import { beforeEach as commonBeforeEach } from './common';
 
 describe('Migrations Collection', () => {
   let migrator: Migrator;
@@ -11,7 +11,7 @@ describe('Migrations Collection', () => {
   let migrationColl: Collection;
 
   beforeEach(async () => {
-    const { migrator: m, db: database, config } = await testsCommon.beforeEach();
+    const { migrator: m, db: database, config } = await commonBeforeEach();
     migrator = m;
     db = database;
     migrationColl = db.collection(config.collection!);

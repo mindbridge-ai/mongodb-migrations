@@ -1,7 +1,7 @@
 import 'mocha';
 import 'should';
 import { Migrator } from '../src/mongodb-migrations';
-import testsCommon from './common';
+import { config } from './common';
 import { LogLevel } from '../src/mongodb-migrations';
 
 describe('Migrator Progress Reporting', () => {
@@ -13,7 +13,7 @@ describe('Migrator Progress Reporting', () => {
       }
     };
 
-    const migrator = new Migrator(testsCommon.config, log);
+    const migrator = new Migrator(config, log);
 
     migrator.add({
       id: '1',

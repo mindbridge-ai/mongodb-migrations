@@ -21,14 +21,10 @@ interface TestContext {
   config: MongoConfig;
 }
 
-export default {
-  config,
-
-  beforeEach: async (): Promise<TestContext> => {
-    const client: MongoClient = await mongoConnect(config);
-    const db: Db = client.db();
-    await db.collection(config.collection!).deleteMany({});
-    const migrator = new Migrator(config, null);
-    return { migrator, db, config };
-  }
-};
+export async function beforeEach(): Promise<TestContext> {
+  const client: MongoClient = await mongoConnect(config);
+  const db: Db = client.db();
+  await db.collection(config.collection!).deleteMany({});
+  const migrator = new Migrator(config, null);
+  return { migrator, db, config };
+}
