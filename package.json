@@ -4,10 +4,12 @@
   "description": "A migration framework for MongoDB",
   "main": "lib/mongodb-migrations.js",
   "scripts": {
-    "build": "coffee --compile --output lib src",
+    "build": "npm run build:ts && npm run build:coffee",
+    "build:coffee": "coffee --compile --output lib src",
+    "build:ts": "tsc",
     "prepublish": "npm run build",
     "test": "mocha --compilers coffee:coffeescript/register -r should --timeout 2000",
-    "dev": "coffee --watch --compile --output lib src"
+    "dev": "concurrently \"tsc --watch\" \"coffee --watch --compile --output lib src\""
   },
   "repository": {
     "type": "git",
@@ -34,9 +36,13 @@
     "mongodb-legacy": "^6.0.1"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.16",
+    "@types/node": "^22.15.19",
     "coffeescript": "^2.5.1",
+    "concurrently": "^9.1.2",
     "mocha": "^3.2.0",
     "rimraf": "^5.0.5",
-    "should": "^11.1.2"
+    "should": "^11.1.2",
+    "typescript": "^5.8.3"
   }
 }

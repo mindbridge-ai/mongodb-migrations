@@ -1,5 +1,5 @@
 { MongoClient } = require('mongodb-legacy')
-urlBuilder = require('./url-builder')
+urlBuilder = require('../lib/url-builder')
 _ = require('lodash')
 
 DEFAULT_POOL_SIZE = 5

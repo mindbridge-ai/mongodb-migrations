@@ -1,5 +1,5 @@
 mm = require '../src/mongodb-migrations'
-urlBuilder = require '../src/url-builder'
+urlBuilder = require('../lib/url-builder')
 
 describe 'Url Builder', ->
 
