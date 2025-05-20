@@ -1,4 +1,4 @@
-function migrationStub(id: string): string {
+export function migrationStub(id: string): string {
     return `'use strict';
 
 module.exports.id = "${id}";
@@ -11,5 +11,3 @@ module.exports.down = async function() {
   // use this.db for MongoDB communication, and this.log() for logging
 };`;
 }
-
-module.exports = migrationStub;

@@ -1,1 +1,1 @@
-declare function migrationStub(id: string): string;
+export declare function migrationStub(id: string): string;

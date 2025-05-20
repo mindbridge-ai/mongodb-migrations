@@ -1,4 +1,4 @@
-interface ReplicasetConfig {
+export interface ReplicasetConfig {
   name: string;
   members: Array<{ host: string; port?: number }>;
 }

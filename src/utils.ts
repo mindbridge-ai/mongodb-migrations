@@ -23,7 +23,7 @@ export function _buildOptions(config: any): any {
   return options;
 }
 
-function validateConnSettings(config: any): void {
+function validateConnSettings(config: urlBuilder.MongoConfig): void {
   if (config.url) return;
   const { replicaset } = config;
   if (!replicaset) {
@@ -40,7 +40,7 @@ function validateConnSettings(config: any): void {
     if (!Array.isArray(replicaset.members)) {
       throw new Error('`replicaset.members` is not set or is not an array');
     }
-    replicaset.members.forEach((m: any) => {
+    replicaset.members.forEach(m => {
       if (!m?.host) {
         throw new Error('each of `replicaset.members` must have `host` set');
       }
@@ -57,7 +57,7 @@ function validateConnSettings(config: any): void {
   }
 }
 
-export function normalizeConfig(config: any): any {
+export function normalizeConfig(config: urlBuilder.MongoConfig): urlBuilder.MongoConfig {
   if (!(typeof config === 'object' && !Array.isArray(config))) {
     throw new Error('`config` is not provided or is not an object');
   }
@@ -66,7 +66,7 @@ export function normalizeConfig(config: any): any {
   return config;
 }
 
-export function connect(config: any): Promise<MongoClient> {
+export function connect(config: urlBuilder.MongoConfig): Promise<MongoClient> {
   const options = _buildOptions(config);
   const url = urlBuilder.buildMongoConnString(config);
   return MongoClient.connect(url, options);

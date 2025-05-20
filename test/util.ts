@@ -1,6 +1,7 @@
 import 'mocha';
-import 'should';
 import { _buildOptions, normalizeConfig } from '../src/utils';
+import should from 'should';
+import { MongoConfig } from '../src/url-builder';
 
 describe('Utils', () => {
   describe('_buildOptions', () => {
@@ -119,21 +120,21 @@ describe('Utils', () => {
       const config = {
         url: 'mongodb://aaa.bb.ccc:27101/some-db?ssl=true'
       };
-      normalizeConfig(config).collection.should.be.equal('_migrations');
+      should(normalizeConfig(config).collection).be.equal('_migrations');
       done();
     });
 
     it('should throw with wrong replicaset 1', (done: Mocha.Done) => {
       normalizeConfig.bind(null, {
         replicaset: 7
-      }).should.throw('`replicaset` is not an object');
+      } as unknown as MongoConfig).should.throw('`replicaset` is not an object');
       done();
     });
 
     it('should throw with wrong replicaset 2', (done: Mocha.Done) => {
       normalizeConfig.bind(null, {
         replicaset: {}
-      }).should.throw('`replicaset.name` is not set');
+      } as unknown as MongoConfig).should.throw('`replicaset.name` is not set');
       done();
     });
 
@@ -142,7 +143,7 @@ describe('Utils', () => {
         replicaset: {
           name: 'x'
         }
-      }).should.throw('`replicaset.members` is not set or is not an array');
+      } as unknown as MongoConfig).should.throw('`replicaset.members` is not set or is not an array');
       done();
     });
 
@@ -152,7 +153,7 @@ describe('Utils', () => {
           name: 'x',
           members: 'lol'
         }
-      }).should.throw('`replicaset.members` is not set or is not an array');
+      } as unknown as MongoConfig).should.throw('`replicaset.members` is not set or is not an array');
       done();
     });
 
@@ -162,7 +163,7 @@ describe('Utils', () => {
           name: 'x',
           members: [{ xost: 'x' }]
         }
-      }).should.throw('each of `replicaset.members` must have `host` set');
+      } as unknown as MongoConfig).should.throw('each of `replicaset.members` must have `host` set');
       done();
     });
 

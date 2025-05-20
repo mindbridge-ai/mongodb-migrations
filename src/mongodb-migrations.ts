@@ -4,9 +4,7 @@ import _ from 'lodash';
 import { Db, Collection, MongoClient, Document, WithId, AnyError, InsertOneResult, DeleteResult } from 'mongodb';
 import { repeatString, connect as mongoConnect, normalizeConfig } from './utils';
 import { MongoConfig } from './url-builder';
-
-// Import migration stub as a require since it uses module.exports
-const migrationStub = require('./migration-stub');
+import { migrationStub } from './migration-stub';
 
 export type LogLevel = 'system' | 'user';
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
@@ -80,12 +78,10 @@ export class Migrator {
   }
 
   add(m: Migration): void {
-    // m must be an { id, up, down } object
     this._m.push(m);
   }
 
   bulkAdd(array: Migration[]): void {
-    // array must be an Array of { id, up, down } objects
     this._m = this._m.concat(array);
   }
 

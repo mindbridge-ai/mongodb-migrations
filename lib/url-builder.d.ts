@@ -1,4 +1,4 @@
-interface ReplicasetConfig {
+export interface ReplicasetConfig {
     name: string;
     members: Array<{
         host: string;
@@ -20,4 +20,3 @@ export interface MongoConfig {
     options?: Record<string, any>;
 }
 export declare function buildMongoConnString(config: MongoConfig): string;
-export {};
