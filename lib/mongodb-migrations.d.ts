@@ -1,9 +1,8 @@
-import { Db, MongoClient } from 'mongodb-legacy';
+import { Db, MongoClient } from 'mongodb';
 import { MongoConfig } from './url-builder';
 export type LogLevel = 'system' | 'user';
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
-type MigrationCallback = (error?: Error) => void;
-type MigrationFunction = ((this: MigrationContext) => Promise<void>) | ((this: MigrationContext, done: MigrationCallback) => void);
+type MigrationFunction = (this: MigrationContext) => Promise<void>;
 interface Migration {
     id: string;
     up?: MigrationFunction;
@@ -42,10 +41,12 @@ export declare class Migrator {
     private _coll;
     private _runWhenReady;
     private _run;
-    migrate(done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void;
-    rollback(done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void;
+    _updateMigrationRecord(direction: "up" | "down", id: string): Promise<void>;
+    migrate(progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults>;
+    rollback(progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults>;
     private _loadMigrationFiles;
-    runFromDir(dir: string, done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void;
+    runFromDir(dir: string, progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults>;
+    runOne(migration: Migration, direction?: 'up' | 'down'): Promise<MigrationResult>;
     create(dir: string, id: string): void;
     dispose(): Promise<void>;
 }

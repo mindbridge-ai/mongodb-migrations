@@ -1,6 +1,6 @@
 import { Migrator } from '../src/mongodb-migrations';
 import { connect as mongoConnect } from '../lib/utils';
-import { Db, MongoClient } from 'mongodb-legacy';
+import { Db, MongoClient } from 'mongodb';
 import { MongoConfig } from '../src/url-builder';
 
 export const config: MongoConfig = {

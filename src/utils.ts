@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb-legacy';
+import { MongoClient } from 'mongodb';
 import * as urlBuilder from './url-builder';
 import _ from 'lodash';
 
@@ -66,16 +66,10 @@ export function normalizeConfig(config: any): any {
   return config;
 }
 
-export function connect(config: any, cb: (error?: any, result?: any) => void): void;
-export function connect(config: any): Promise<any>;
-export function connect(config: any, cb?: (error?: any, result?: any) => void): any {
+export function connect(config: any): Promise<MongoClient> {
   const options = _buildOptions(config);
   const url = urlBuilder.buildMongoConnString(config);
-  if (cb) {
-    MongoClient.connect(url, options, cb);
-  } else {
-    return MongoClient.connect(url, options);
-  }
+  return MongoClient.connect(url, options);
 }
 
 export function repeatString(str: string, n: number): string {

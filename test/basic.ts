@@ -1,6 +1,6 @@
 import 'mocha';
 import 'should';
-import { Collection, Db } from 'mongodb-legacy';
+import { Collection, Db } from 'mongodb';
 import { Migrator } from '../src/mongodb-migrations';
 import { beforeEach as commonBeforeEach } from './common';
 
@@ -41,150 +41,97 @@ describe('Migrator', () => {
     done();
   });
 
-  it('should run migrations and return result', (done: Mocha.Done) => {
+  it('should run migrations and return result', async () => {
     migrator.add({
       id: '1',
-      up: (cb) => {
-        coll.insertOne({ name: 'tobi' }, cb);
+      up: async () => {
+        await coll.insertOne({ name: 'tobi' });
       }
     });
 
-    migrator.migrate((err, res) => {
-      if (err) return done(err);
-      (res as any).should.be.ok();
-      (res!['1'] as any).should.be.ok();
-      res!['1'].status.should.be.equal('ok');
-      
-      coll.countDocuments({ name: 'tobi' }).then((count) => {
-        count.should.be.equal(1);
-        done();
-      }).catch(done);
-    });
+    const res = await migrator.migrate();
+    (res as any).should.be.ok();
+    (res['1'] as any).should.be.ok();
+    res['1'].status.should.be.equal('ok');
+    
+    const count = await coll.countDocuments({ name: 'tobi' });
+    count.should.be.equal(1);
   });
 
-  it('should run migrations that return resolved promise on error', (done: Mocha.Done) => {
+  it('should run migrations and return error on promise rejection', async () => {
     migrator.add({
       id: '1',
-      up: () => {
-        return new Promise<void>((resolve, reject) => {
-          coll.insertOne({ name: 'tobi' }, (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
+      up: async () => {
+        throw new Error('error - promise rejected');
       }
     });
 
-    migrator.migrate((err, res) => {
-      if (err) return done(err);
-      (res as any).should.be.ok();
-      (res!['1'] as any).should.be.ok();
-      res!['1'].status.should.be.equal('ok');
-
-      coll.countDocuments({ name: 'tobi' }).then((count) => {
-        count.should.be.equal(1);
-        done();
-      }).catch(done);
-    });
+    try {
+      await migrator.migrate();
+      throw new Error('migration should have failed');
+    } catch (err) {
+      if (err instanceof Error) {
+        err.message.should.be.equal('error - promise rejected');
+      } else {
+        throw new Error('Expected err to be an Error instance');
+      }
+    }
   });
 
-  it('should run migrations and return rejected promise on error', (done: Mocha.Done) => {
+  it('should timeout on promise-based migration and return error', async () => {
     migrator.add({
       id: '1',
-      up: () => {
-        return Promise.reject(new Error('error - promise rejected'));
+      up: async () => {
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
     });
 
-    migrator.migrate((err) => {
-      if (!err) return done(new Error('migration should have failed'));
-      err.message.should.be.equal('error - promise rejected');
-      done();
-    });
+    try {
+      await migrator.migrate();
+      throw new Error("migration should have failed with a timeout before getting here");
+    } catch (err) {
+      String(err).should.endWith("timed-out");
+    }
   });
 
-  it('should timeout on promise-based migration and return error', (done: Mocha.Done) => {
-    migrator.add({
-      id: '1',
-      up: () => {
-        return new Promise((resolve) => setTimeout(resolve, 300));
-      }
-    });
-
-    migrator.migrate((err) => {
-      if (!err) return done(new Error('migration should have failed')); 
-      err.message.should.be.equal('migration timed-out');
-      done();
-    });
-  });
-
-  it('should timeout migration and return error', (done: Mocha.Done) => {
-    migrator.add({
-      id: '1',
-      up: (cb) => {
-        setTimeout(cb, 300);
-      }
-    });
-
-    migrator.migrate((err) => {
-      if (!err) return done(new Error('migration should have failed'));
-      err.message.should.be.equal('migration timed-out');
-      done();
-    });
-  });
-
-  it('should allow rollback', (done: Mocha.Done) => {
+  it('should allow rollback', async () => {
     migrator.add({
       id: "1",
-      up: (cb) => {
-        coll.insertOne({ name: 'tobi' }, cb);
+      up: async () => {
+        await coll.insertOne({ name: 'tobi' });
       },
-      down: (cb) => {
-        coll.updateOne({ name: 'tobi' }, { $set: { name: 'loki' } }, cb);
+      down: async () => {
+        await coll.updateOne({ name: 'tobi' }, { $set: { name: 'loki' } });
       }
     });
 
-    migrator.migrate((err) => {
-      if (err) return done(err);
-      migrator.rollback((err) => {
-        if (err) return done(err);
+    await migrator.migrate();
+    await migrator.rollback();
 
-        coll.countDocuments({ name: 'tobi' }).then((count) => {
-          count.should.be.equal(0);
-          return coll.countDocuments({ name: 'loki' });
-        }).then((count) => {
-          count.should.be.equal(1);
-          done();
-        }).catch(done);
-      });
-    });
+    let count = await coll.countDocuments({ name: 'tobi' });
+    count.should.be.equal(0);
+    
+    count = await coll.countDocuments({ name: 'loki' });
+    count.should.be.equal(1);
   });
 
-  it('should skip on consequent runs', (done: Mocha.Done) => {
+  it('should skip on consequent runs', async () => {
     migrator.add({
       id: "1",
-      up: (cb) => {
-        coll.insertOne({ name: 'tobi' }, cb);
+      up: async () => {
+        await coll.insertOne({ name: 'tobi' });
       },
-      down: (cb) => {
-        coll.updateOne({ name: 'tobi' }, { $set: { name: 'loki' } }, cb);
+      down: async () => {
+        await coll.updateOne({ name: 'tobi' }, { $set: { name: 'loki' } });
       }
     });
 
-    migrator.migrate((err, res) => {
-      if (err) return done(err);
-      (res!['1'] as any).should.be.ok();
-      res!['1'].status.should.be.equal('ok');
+    let res = await migrator.migrate();
+    (res['1'] as any).should.be.ok();
+    res['1'].status.should.be.equal('ok');
 
-      migrator.migrate((err, res) => {
-        if (err) return done(err);
-        (res!['1'] as any).should.be.ok();
-        res!['1'].status.should.be.equal('skip');
-        done();
-      });
-    });
+    res = await migrator.migrate();
+    (res['1'] as any).should.be.ok();
+    res['1'].status.should.be.equal('skip');
   });
 });

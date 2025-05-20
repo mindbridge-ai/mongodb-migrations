@@ -3,14 +3,12 @@ function migrationStub(id: string): string {
 
 module.exports.id = "${id}";
 
-module.exports.up = function (done) {
+module.exports.up = async function() {
   // use this.db for MongoDB communication, and this.log() for logging
-  done();
 };
 
-module.exports.down = function (done) {
+module.exports.down = async function() {
   // use this.db for MongoDB communication, and this.log() for logging
-  done();
 };`;
 }
 

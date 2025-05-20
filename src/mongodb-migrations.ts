@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import _ from 'lodash';
-import { Db, Collection, MongoClient, Document, WithId, AnyError, Callback, InsertOneResult, DeleteResult } from 'mongodb-legacy';
+import { Db, Collection, MongoClient, Document, WithId, AnyError, InsertOneResult, DeleteResult } from 'mongodb';
 import { repeatString, connect as mongoConnect, normalizeConfig } from './utils';
 import { MongoConfig } from './url-builder';
 
@@ -16,14 +16,7 @@ const defaultLog = (src: LogLevel, ...args: any[]): void => {
   console.log(pad, ...args);
 };
 
-type MigrationCallback = (error?: Error) => void;
-
-// A migration function can either:
-// 1. Return a Promise<void>
-// 2. Accept a callback parameter
-type MigrationFunction = 
-  | ((this: MigrationContext) => Promise<void>)
-  | ((this: MigrationContext, done: MigrationCallback) => void);
+type MigrationFunction = (this: MigrationContext) => Promise<void>;
 
 interface Migration {
   id: string;
@@ -100,26 +93,20 @@ export class Migrator {
     return this._db.collection(this._collName);
   }
 
-  private _runWhenReady(direction: 'up' | 'down', cb: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void {
+  private async _runWhenReady(direction: 'up' | 'down', progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
     if (this._isDisposed) {
-      return cb(new Error('This migrator is disposed and cannot be used anymore'));
+      throw new Error('This migrator is disposed and cannot be used anymore');
     }
-    const onSuccess = (): void => {
-      this._ranMigrations = {};
-      this._coll().find().toArray().then((docs: WithId<Document>[]) => {
-        for (const doc of docs) {
-          this._ranMigrations[doc.id] = true;
-        }
-        this._run(direction, cb, progress);
-      }).catch((err: AnyError) => cb(err));
-    };
-    const onError = (err: Error): void => {
-      cb(err);
-    };
-    this._dbReady.then(onSuccess, onError);
+    await this._dbReady;
+    this._ranMigrations = {};
+    const docs = await this._coll().find().toArray();
+    for (const doc of docs) {
+      this._ranMigrations[doc.id] = true;
+    }
+    return this._run(direction, progress);
   }
 
-  private _run(direction: 'up' | 'down', done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void {
+  private async _run(direction: 'up' | 'down', progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
     let m: Migration[];
     if (direction === 'down') {
       m = _(this._m)
@@ -145,38 +132,10 @@ export class Migrator {
     const userLog = log('user');
     const systemLog = log('system');
 
-    let i = 0;
-    const l = m.length;
     const migrationsCollection = this._coll();
 
-    const migrationsCollectionUpdatePromises: Promise<any>[] = [];
-
-    const handleMigrationDone = (id: string): void => {
-      const p = direction === 'up'
-        ? migrationsCollection.insertOne({ id })
-        : migrationsCollection.deleteMany({ id });
-
-      migrationsCollectionUpdatePromises.push(p);
-    };
-
-    const allDone = (err?: Error): void => {
-      Promise.all(migrationsCollectionUpdatePromises).then(() => {
-        done(err, this._result);
-      });
-      // This return is necessary to prevent the above promise from being returned,
-      // otherwise the promise will eventually be returned by the migration up/down function.
-      // That would interfere with promise-based migrations, so explicitly return nothing here.
-      return;
-    };
-
-    const runOne = (): void => {
-      if (i >= l) {
-        return allDone();
-      }
-      const migration = m[i];
-      i += 1;
-
-      const migrationDone = (res: MigrationResult): void => {
+    for (const migration of m) {
+      const migrationDone = async (res: MigrationResult): Promise<void> => {
         this._result[migration.id] = res;
         _.defer(() => {
           progress?.(migration.id, res);
@@ -190,7 +149,7 @@ export class Migrator {
           systemLog('  ' + res.error);
         }
         if (res.status === 'ok' || (res.status === 'skip' && (res.code === 'no_up' || res.code === 'no_down'))) {
-          handleMigrationDone(migration.id);
+          await this._updateMigrationRecord(direction, migration.id);
         }
       };
 
@@ -212,88 +171,64 @@ export class Migrator {
         skipCode = 'not_in_recent_migrate';
       }
       if (skipReason) {
-        migrationDone({ status: 'skip', reason: skipReason, code: skipCode || undefined });
-        return runOne();
-      }
-
-      let didTimeout = false;
-      let didReturnPromise = false;
-      let didExecuteCallback = false;
-      let timeoutId: NodeJS.Timeout;
-
-      const promiseAndDoneError = (): void => {
-        const err = new Error("Migration called done() AND returned a promise");
-        migrationDone({ status: 'error', error: err });
-        allDone(err);
-      };
-
-      if (this._timeout) {
-        timeoutId = setTimeout(() => {
-          didTimeout = true;
-          const err = new Error("migration timed-out");
-          migrationDone({ status: 'error', error: err });
-          allDone(err);
-        }, this._timeout);
+        await migrationDone({ status: 'skip', reason: skipReason, code: skipCode || undefined });
+        continue;
       }
 
       const context: MigrationContext = { db: this._db, log: userLog, client: this._client };
+      let timeoutId;
 
-      // We don't know if it's a promise or callback, so cast to a function with a return value of any
-      const migrationFnWithUnknownReturn = fn as (this: MigrationContext, done: MigrationCallback) => any;
-      const donePromise = migrationFnWithUnknownReturn.call(context, (err?: Error) => {
-        didExecuteCallback = true;
+      const migrationAndTimeoutPromise = Promise.race([
+        fn!.call(context),
+        ...(this._timeout
+          ? [
+              new Promise((_, reject) => {
+                timeoutId = setTimeout(() => {
+                  reject(new Error("migration timed-out"));
+                }, this._timeout)
+              })
+            ]
+          : [])
+      ]);
 
-        if (didTimeout) return;
-        clearTimeout(timeoutId);
-
-        if (didReturnPromise) {
-          promiseAndDoneError();
-          return;
-        }
-
-        if (err) {
-          migrationDone({ status: 'error', error: err });
-          allDone(err);
-        } else {
-          migrationDone({ status: 'ok' });
-          runOne();
-        }
-      });
-
-      if (donePromise && donePromise.then instanceof Function) {
-        didReturnPromise = true;
-
-        if (didExecuteCallback) {
-          promiseAndDoneError();
-          return;
-        }
-
-        donePromise.then(() => {
-          if (didTimeout) return;
+      try {
+        await migrationAndTimeoutPromise;
+        if (timeoutId) {
           clearTimeout(timeoutId);
-          migrationDone({ status: 'ok' });
-          runOne();
-        }).catch((err: Error) => {
-          if (didTimeout) return;
+          timeoutId = undefined;
+        }
+
+        await migrationDone({ status: 'ok' });
+      } catch (err) {
+        if (timeoutId) {
           clearTimeout(timeoutId);
-          migrationDone({ status: 'error', error: err });
-          allDone(err);
-        });
+          timeoutId = undefined;
+        }
+        await migrationDone({ status: 'error', error: err as Error });
+        throw err;
       }
-    };
-
-    runOne();
-  }
-
-  migrate(done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void {
-    this._runWhenReady('up', done, progress);
-  }
-
-  rollback(done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void {
-    if (this._lastDirection !== 'up') {
-      return done(new Error('Rollback can only be ran after migrate'));
     }
-    this._runWhenReady('down', done, progress);
+
+    return this._result;
+  }
+
+  async _updateMigrationRecord(direction: "up" | "down", id: string): Promise<void> {
+    if (direction === 'up') {
+      await this._coll().insertOne({ id });
+    } else {
+      await this._coll().deleteMany({ id });
+    }
+  }
+
+  async migrate(progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
+    return this._runWhenReady('up', progress);
+  }
+
+  async rollback(progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
+    if (this._lastDirection !== 'up') {
+      throw new Error('Rollback can only be ran after migrate');
+    }
+    return this._runWhenReady('down', progress);
   }
 
   private _loadMigrationFiles(dir: string): Array<{ number: number | null; module: any }> {
@@ -315,16 +250,18 @@ export class Migrator {
       });
   }
 
-  runFromDir(dir: string, done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void {
-    try {
-      const files = this._loadMigrationFiles(dir);
-      this.bulkAdd(_.map(files, 'module'));
-      this.migrate(done, progress);
-    } catch (err) {
-      done(err as Error);
-    }
+  async runFromDir(dir: string, progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
+    const files = this._loadMigrationFiles(dir);
+    this.bulkAdd(_.map(files, 'module'));
+    return await this.migrate(progress);
   }
 
+  async runOne(migration: Migration, direction: 'up' | 'down' = 'up'): Promise<MigrationResult> {
+    this.add(migration);
+    const results = await this._runWhenReady(direction);
+    return results[migration.id];
+  }
+  
   create(dir: string, id: string): void {
     const files = this._loadMigrationFiles(dir);
     const maxNum = _.maxBy(files, 'number')?.number ?? 0;
