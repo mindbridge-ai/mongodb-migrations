@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import { MongoConfig } from './types';
 import * as urlBuilder from './url-builder';
 import _ from 'lodash';
 
@@ -23,7 +24,7 @@ export function _buildOptions(config: any): any {
   return options;
 }
 
-function validateConnSettings(config: urlBuilder.MongoConfig): void {
+function validateConnSettings(config: MongoConfig): void {
   if (config.url) return;
   const { replicaset } = config;
   if (!replicaset) {
@@ -57,7 +58,7 @@ function validateConnSettings(config: urlBuilder.MongoConfig): void {
   }
 }
 
-export function normalizeConfig(config: urlBuilder.MongoConfig): urlBuilder.MongoConfig {
+export function normalizeConfig(config: MongoConfig): MongoConfig {
   if (!(typeof config === 'object' && !Array.isArray(config))) {
     throw new Error('`config` is not provided or is not an object');
   }
@@ -66,7 +67,7 @@ export function normalizeConfig(config: urlBuilder.MongoConfig): urlBuilder.Mong
   return config;
 }
 
-export function connect(config: urlBuilder.MongoConfig): Promise<MongoClient> {
+export function connect(config: MongoConfig): Promise<MongoClient> {
   const options = _buildOptions(config);
   const url = urlBuilder.buildMongoConnString(config);
   return MongoClient.connect(url, options);

@@ -1,7 +1,7 @@
 import { Migrator } from '../src/mongodb-migrations';
 import { connect as mongoConnect } from '../lib/utils';
 import { Db, MongoClient } from 'mongodb';
-import { MongoConfig } from '../src/url-builder';
+import { MongoConfig } from '../src/types';
 
 export const config: MongoConfig = {
   host: process.env.DB_HOST || 'localhost',

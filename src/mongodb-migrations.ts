@@ -3,7 +3,7 @@ import path from 'path';
 import _ from 'lodash';
 import { Db, Collection, MongoClient, Document, WithId, AnyError, InsertOneResult, DeleteResult } from 'mongodb';
 import { repeatString, connect as mongoConnect, normalizeConfig } from './utils';
-import { MongoConfig } from './url-builder';
+import { MongoConfig } from "./types";
 import { migrationStub } from './migration-stub';
 
 export type LogLevel = 'system' | 'user';

@@ -1,7 +1,7 @@
 import 'mocha';
 import { _buildOptions, normalizeConfig } from '../src/utils';
 import should from 'should';
-import { MongoConfig } from '../src/url-builder';
+import { MongoConfig } from '../src/types';
 
 describe('Utils', () => {
   describe('_buildOptions', () => {

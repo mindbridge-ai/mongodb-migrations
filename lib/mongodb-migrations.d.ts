@@ -1,5 +1,5 @@
 import { Db, MongoClient } from 'mongodb';
-import { MongoConfig } from './url-builder';
+import { MongoConfig } from "./types";
 export type LogLevel = 'system' | 'user';
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
 type MigrationFunction = (this: MigrationContext) => Promise<void>;
