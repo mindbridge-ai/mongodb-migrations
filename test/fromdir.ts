@@ -20,17 +20,17 @@ describe('Migrator from Directory', () => {
     const dir = path.join(__dirname, 'migrations');
     const res = await migrator.runFromDir(dir);
     
-    let count = await coll.find({ name: 'tobi' }).count();
+    let count = await coll.countDocuments({ name: 'tobi' });
     count.should.be.equal(1);
 
-    count = await coll.find({ name: 'loki' }).count();
+    count = await coll.countDocuments({ name: 'loki' });
     count.should.be.equal(1);
 
-    count = await coll.find({ ok: 1 }).count();
+    count = await coll.countDocuments({ ok: 1 });
     count.should.be.equal(2);
 
     await migrator.rollback();
-    count = await coll.find().count();
+    count = await coll.countDocuments();
     count.should.be.equal(0);
   });
 });

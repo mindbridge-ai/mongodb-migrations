@@ -28,17 +28,16 @@ describe('Migrations Collection', () => {
     });
 
     await migrator.migrate();
-    let count = await coll.find({ name: 'tobi' }).count();
+    let count = await coll.countDocuments({ name: 'tobi' });
     count.should.be.equal(1);
 
-    count = await migrationColl.find({}).count();
+    count = await migrationColl.countDocuments({});
     count.should.be.equal(1);
 
     // run again
     await migrator.migrate();
-    const argh = await migrationColl.find({}).toArray();
 
-    count = await coll.find({ name: 'tobi' }).count();
+    count = await coll.countDocuments({ name: 'tobi' });
     count.should.be.equal(1);
 
     count = await migrationColl.countDocuments({});

@@ -21,14 +21,14 @@ describe('Migrator Rollback', () => {
     const migrationsCol = db.collection('_migrations');
     
     await migrator.runFromDir(dir);
-    let count = await migrationsCol.find().count();
+    let count = await migrationsCol.countDocuments();
     count.should.be.equal(3);
     
     await migrator.rollback();
-    count = await coll.find().count();
+    count = await coll.countDocuments();
     count.should.be.equal(0);
 
-    count = await migrationsCol.find().count();
+    count = await migrationsCol.countDocuments();
     count.should.be.equal(0);
   });
 });
