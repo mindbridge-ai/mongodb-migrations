@@ -1,6 +1,6 @@
-import { config } from './common';
+import { config } from "./common";
 
 export default {
-  ...config,
-  directory: "created-migrations"
+    ...config,
+    directory: "created-migrations",
 };

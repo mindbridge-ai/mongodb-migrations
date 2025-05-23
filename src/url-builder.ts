@@ -1,67 +1,67 @@
 import { MongoConfig } from "./types";
 
 function buildHost(opts: { host: string; port?: number }): string {
-  let { host, port } = opts;
-  if (port) {
-    host += ':' + port;
-  }
-  return host;
+    let { host, port } = opts;
+    if (port) {
+        host += ":" + port;
+    }
+    return host;
 }
 
 export function buildMongoConnString(config: MongoConfig): string {
-  if (config.url) {
-    return config.url;
-  }
-
-  const hasUser = !!config.user;
-  const { replicaset } = config;
-
-  let s = 'mongodb://';
-
-  if (hasUser) {
-    s += config.user;
-  }
-
-  if (config.password) {
-    if (!hasUser) {
-      throw new Error('`password` provided but `user` is not');
+    if (config.url) {
+        return config.url;
     }
-    s += ':' + config.password;
-  }
 
-  if (hasUser) {
-    s += '@';
-  }
+    const hasUser = !!config.user;
+    const { replicaset } = config;
 
-  if (replicaset) {
-    s += replicaset.members.map(buildHost).join(',');
-  } else {
-    s += buildHost(config as { host: string; port?: number });
-  }
+    let s = "mongodb://";
 
-  s += '/';
+    if (hasUser) {
+        s += config.user;
+    }
 
-  if (config.db) {
-    s += config.db;
-  }
+    if (config.password) {
+        if (!hasUser) {
+            throw new Error("`password` provided but `user` is not");
+        }
+        s += ":" + config.password;
+    }
 
-  const params: string[] = [];
+    if (hasUser) {
+        s += "@";
+    }
 
-  if (replicaset) {
-    params.push(`replicaSet=${replicaset.name}`);
-  }
+    if (replicaset) {
+        s += replicaset.members.map(buildHost).join(",");
+    } else {
+        s += buildHost(config as { host: string; port?: number });
+    }
 
-  if (config.ssl) {
-    params.push('ssl=true');
-  }
+    s += "/";
 
-  if (config.authDatabase) {
-    params.push(`authSource=${config.authDatabase}`);
-  }
+    if (config.db) {
+        s += config.db;
+    }
 
-  if (params.length > 0) {
-    s += '?' + params.join('&');
-  }
+    const params: string[] = [];
 
-  return s;
+    if (replicaset) {
+        params.push(`replicaSet=${replicaset.name}`);
+    }
+
+    if (config.ssl) {
+        params.push("ssl=true");
+    }
+
+    if (config.authDatabase) {
+        params.push(`authSource=${config.authDatabase}`);
+    }
+
+    if (params.length > 0) {
+        s += "?" + params.join("&");
+    }
+
+    return s;
 }

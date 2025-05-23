@@ -1,6 +1,6 @@
-import { Db, MongoClient } from 'mongodb';
+import { Db, MongoClient } from "mongodb";
 import { MongoConfig } from "./types";
-export type LogLevel = 'system' | 'user';
+export type LogLevel = "system" | "user";
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
 type MigrationFunction = (this: MigrationContext) => Promise<void>;
 interface Migration {
@@ -8,12 +8,12 @@ interface Migration {
     up?: MigrationFunction;
     down?: MigrationFunction;
 }
-type MigrationStatus = 'ok' | 'skip' | 'error';
+type MigrationStatus = "ok" | "skip" | "error";
 interface MigrationResult {
     status: MigrationStatus;
     error?: Error;
     reason?: string;
-    code?: 'no_up' | 'no_down' | 'already_ran' | 'not_in_recent_migrate';
+    code?: "no_up" | "no_down" | "already_ran" | "not_in_recent_migrate";
 }
 interface MigrationResults {
     [key: string]: MigrationResult;
@@ -46,7 +46,7 @@ export declare class Migrator {
     rollback(progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults>;
     private _loadMigrationFiles;
     runFromDir(dir: string, progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults>;
-    runOne(migration: Migration, direction?: 'up' | 'down'): Promise<MigrationResult>;
+    runOne(migration: Migration, direction?: "up" | "down"): Promise<MigrationResult>;
     create(dir: string, id: string): void;
     dispose(): Promise<void>;
 }
