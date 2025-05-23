@@ -108,13 +108,12 @@ export class Migrator {
     private async _run(direction: "up" | "down", progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
         let m: Migration[];
         if (direction === "down") {
-            m = _(this._m)
+            m = this._m
                 .reverse()
                 .filter((m) => {
                     const _r = this._result[m.id]?.status;
                     return _r && _r !== "skip";
-                })
-                .value();
+                });
         } else {
             direction = "up";
             this._result = {};
@@ -136,9 +135,7 @@ export class Migrator {
         for (const migration of m) {
             const migrationDone = async (res: MigrationResult): Promise<void> => {
                 this._result[migration.id] = res;
-                _.defer(() => {
-                    progress?.(migration.id, res);
-                });
+                progress?.(migration.id, res);
                 let msg = `Migration '${migration.id}': ${res.status}`;
                 if (res.status === "skip") {
                     msg += ` (${res.reason})`;
@@ -251,7 +248,7 @@ export class Migrator {
 
     async runFromDir(dir: string, progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
         const files = this._loadMigrationFiles(dir);
-        this.bulkAdd(_.map(files, "module"));
+        this.bulkAdd(files.map(f => f.module))
         return await this.migrate(progress);
     }
 
