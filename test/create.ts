@@ -1,5 +1,4 @@
-import 'mocha';
-import 'should';
+import { describe, it, beforeEach, expect } from 'vitest';
 import path from 'path';
 import fs from 'fs';
 import { rimraf } from 'rimraf';
@@ -17,9 +16,9 @@ describe('Migrations Builder', () => {
 
   it('should create migration stubs for JS', () => {
     migrator.create(dir, 'test1');
-    fs.existsSync(path.join(dir, '1-test1.js')).should.be.ok();
+    expect(fs.existsSync(path.join(dir, '1-test1.js'))).toBe(true);
     
     migrator.create(dir, 'test2');
-    fs.existsSync(path.join(dir, '2-test2.js')).should.be.ok();
+    expect(fs.existsSync(path.join(dir, '2-test2.js'))).toBe(true);
   });
 });

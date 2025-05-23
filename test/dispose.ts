@@ -1,5 +1,4 @@
-import 'mocha';
-import 'should';
+import { describe, it, expect } from 'vitest';
 import path from 'path';
 import { Migrator } from '../src/mongodb-migrations';
 import { config } from './common';
@@ -18,7 +17,7 @@ describe('Migrator Dispose', () => {
       await migrator.rollback();
       throw new Error('Expected rollback to fail after dispose');
     } catch (err) {
-      String(err).should.match(/disposed/);
+      expect(String(err)).toMatch(/disposed/);
     }
   });
 });

@@ -1,5 +1,4 @@
-import 'mocha';
-import 'should';
+import { describe, it, beforeEach, expect } from 'vitest';
 import { Collection, Db } from 'mongodb';
 import { Migrator } from '../src/mongodb-migrations';
 import { beforeEach as commonBeforeEach } from './common';
@@ -15,20 +14,19 @@ describe('Migrator', () => {
     await coll.deleteMany({});
   });
 
-  it('should exist', (done: Mocha.Done) => {
-    (migrator as any).should.be.ok();
-    (db as any).should.be.ok();
-    done();
+  it('should exist', () => {
+    expect(migrator).toBeTruthy();
+    expect(db).toBeTruthy();
   });
 
-  it('should set default migrations collection', (done: Mocha.Done) => {
+  it('should set default migrations collection', () => {
     const config1 = {
       host: 'localhost',
       port: 27017,
       db: '_mm'
     };
     const m1 = new Migrator(config1, null);
-    (m1 as any)._collName.should.be.equal('_migrations');
+    expect((m1 as any)._collName).toBe('_migrations');
 
     const config2 = {
       host: 'localhost',
@@ -37,8 +35,7 @@ describe('Migrator', () => {
       collection: '_custom'
     };
     const m2 = new Migrator(config2, null);
-    (m2 as any)._collName.should.be.equal('_custom');
-    done();
+    expect((m2 as any)._collName).toBe('_custom');
   });
 
   it('should run migrations and return result', async () => {
@@ -50,12 +47,12 @@ describe('Migrator', () => {
     });
 
     const res = await migrator.migrate();
-    (res as any).should.be.ok();
-    (res['1'] as any).should.be.ok();
-    res['1'].status.should.be.equal('ok');
+    expect(res).toBeTruthy();
+    expect(res['1']).toBeTruthy();
+    expect(res['1'].status).toBe('ok');
     
     const count = await coll.countDocuments({ name: 'tobi' });
-    count.should.be.equal(1);
+    expect(count).toBe(1);
   });
 
   it('should run migrations and return error on promise rejection', async () => {
@@ -66,16 +63,7 @@ describe('Migrator', () => {
       }
     });
 
-    try {
-      await migrator.migrate();
-      throw new Error('migration should have failed');
-    } catch (err) {
-      if (err instanceof Error) {
-        err.message.should.be.equal('error - promise rejected');
-      } else {
-        throw new Error('Expected err to be an Error instance');
-      }
-    }
+    await expect(migrator.migrate()).rejects.toThrow('error - promise rejected');
   });
 
   it('should timeout on promise-based migration and return error', async () => {
@@ -86,12 +74,7 @@ describe('Migrator', () => {
       }
     });
 
-    try {
-      await migrator.migrate();
-      throw new Error("migration should have failed with a timeout before getting here");
-    } catch (err) {
-      String(err).should.endWith("timed-out");
-    }
+    await expect(migrator.migrate()).rejects.toThrow(/timed-out$/);
   });
 
   it('should allow rollback', async () => {
@@ -109,10 +92,10 @@ describe('Migrator', () => {
     await migrator.rollback();
 
     let count = await coll.countDocuments({ name: 'tobi' });
-    count.should.be.equal(0);
+    expect(count).toBe(0);
     
     count = await coll.countDocuments({ name: 'loki' });
-    count.should.be.equal(1);
+    expect(count).toBe(1);
   });
 
   it('should skip on consequent runs', async () => {
@@ -127,11 +110,11 @@ describe('Migrator', () => {
     });
 
     let res = await migrator.migrate();
-    (res['1'] as any).should.be.ok();
-    res['1'].status.should.be.equal('ok');
+    expect(res['1']).toBeTruthy();
+    expect(res['1'].status).toBe('ok');
 
     res = await migrator.migrate();
-    (res['1'] as any).should.be.ok();
-    res['1'].status.should.be.equal('skip');
+    expect(res['1']).toBeTruthy();
+    expect(res['1'].status).toBe('skip');
   });
 });

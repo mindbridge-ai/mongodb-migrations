@@ -1,5 +1,4 @@
-import 'mocha';
-import 'should';
+import { describe, it, beforeEach, expect } from 'vitest';
 import path from 'path';
 import { Collection, Db } from 'mongodb';
 import { Migrator } from '../src/mongodb-migrations';
@@ -21,16 +20,16 @@ describe('Migrator from Directory', () => {
     const res = await migrator.runFromDir(dir);
     
     let count = await coll.countDocuments({ name: 'tobi' });
-    count.should.be.equal(1);
+    expect(count).toBe(1);
 
     count = await coll.countDocuments({ name: 'loki' });
-    count.should.be.equal(1);
+    expect(count).toBe(1);
 
     count = await coll.countDocuments({ ok: 1 });
-    count.should.be.equal(2);
+    expect(count).toBe(2);
 
     await migrator.rollback();
     count = await coll.countDocuments();
-    count.should.be.equal(0);
+    expect(count).toBe(0);
   });
 });

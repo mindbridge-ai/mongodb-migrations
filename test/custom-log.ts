@@ -1,5 +1,4 @@
-import 'mocha';
-import 'should';
+import { describe, it, expect } from 'vitest';
 import { Migrator } from '../src/mongodb-migrations';
 import { config } from './common';
 
@@ -23,9 +22,9 @@ describe('Migrator Logging', () => {
     });
 
     const res = await migrator.migrate();
-    (res['1'] as any).should.be.ok();
-    messages.should.have.lengthOf(2);
-    messages[0].should.be.equal('1');
-    messages[1].should.be.equal('2');
+    expect(res['1']).toBeDefined();
+    expect(messages).toHaveLength(2);
+    expect(messages[0]).toBe('1');
+    expect(messages[1]).toBe('2');
   });
 });

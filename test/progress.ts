@@ -1,10 +1,15 @@
-import 'mocha';
-import 'should';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { Migrator } from '../src/mongodb-migrations';
-import { config } from './common';
+import { beforeEach as commonBeforeEach, config } from './common';
 import { LogLevel } from '../src/mongodb-migrations';
 
 describe('Migrator Progress Reporting', () => {
+  let migrator: Migrator;
+
+  beforeEach(async () => {
+    await commonBeforeEach();
+  });
+
   it('should call back the progress parameter', async () => {
     const messages: string[] = [];
     const log = (level: LogLevel, message: string): void => {
@@ -13,8 +18,16 @@ describe('Migrator Progress Reporting', () => {
       }
     };
 
-    const migrator = new Migrator(config, log);
     const progressResults: string[] = [];
+    const progressFunc = (migrationId, migrationRes) => {
+      const status = migrationRes?.status;
+      if (status !== 'ok') {
+        throw new Error(`Error running ${migrationId}, result is ${status}`);
+      }
+      progressResults.push(migrationId);
+    };
+
+    const migrator = new Migrator(config, log);
 
     migrator.add({
       id: '1',
@@ -30,21 +43,10 @@ describe('Migrator Progress Reporting', () => {
       }
     });
 
-    await new Promise<void>((resolve, reject) => {
-      let resultsCount = 0;
-      migrator.migrate((migrationId, migrationRes) => {
-        const status = migrationRes?.status;
-        if (status !== 'ok') {
-          reject(new Error(`Error running ${migrationId}, result is ${status}`));
-          return;
-        }
-        progressResults.push(migrationId);
-        resultsCount += 1;
-        if (resultsCount === 2) resolve();
-      }).catch(reject);
-    });
 
-    messages.should.have.lengthOf(2);
-    progressResults.should.have.lengthOf(2);
+    await migrator.migrate(progressFunc);
+
+    expect(messages).toHaveLength(2);
+    expect(progressResults).toHaveLength(2);
   });
 });

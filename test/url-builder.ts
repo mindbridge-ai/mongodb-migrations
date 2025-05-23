@@ -1,18 +1,16 @@
-import 'mocha';
-import should from 'should';
+import { describe, it, expect } from 'vitest';
 import * as urlBuilder from '../lib/url-builder';
 
 describe('Url Builder', () => {
-  it('uses the url as given', (done: Mocha.Done) => {
+  it('uses the url as given', () => {
     const config = {
       url: 'mongodb://aaa.bb.ccc:27101/some-db?ssl=true',
     };
     const connString = urlBuilder.buildMongoConnString(config);
-    should(connString).be.equal(config.url);
-    done();
+    expect(connString).toBe(config.url);
   });
 
-  it('builds a single node url', (done: Mocha.Done) => {
+  it('builds a single node url', () => {
     const config = {
       user: 'someuser',
       password: 'somepass',
@@ -22,11 +20,10 @@ describe('Url Builder', () => {
       collection: '_migrations',
     };
     const connString = urlBuilder.buildMongoConnString(config);
-    should(connString).be.equal(`mongodb://${config.user}:${config.password}@${config.host}:${config.port}/${config.db}`);
-    done();
+    expect(connString).toBe(`mongodb://${config.user}:${config.password}@${config.host}:${config.port}/${config.db}`);
   });
 
-  it('builds a single node url with ssl', (done: Mocha.Done) => {
+  it('builds a single node url with ssl', () => {
     const config = {
       user: 'someuser',
       password: 'somepass',
@@ -37,11 +34,10 @@ describe('Url Builder', () => {
       ssl: true,
     };
     const connString = urlBuilder.buildMongoConnString(config);
-    should(connString).be.equal(`mongodb://${config.user}:${config.password}@${config.host}:${config.port}/${config.db}?ssl=true`);
-    done();
+    expect(connString).toBe(`mongodb://${config.user}:${config.password}@${config.host}:${config.port}/${config.db}?ssl=true`);
   });
 
-  it('builds a single node url with an authDatabase', (done: Mocha.Done) => {
+  it('builds a single node url with an authDatabase', () => {
     const config = {
       user: 'someuser',
       password: 'somepass',
@@ -52,11 +48,10 @@ describe('Url Builder', () => {
       authDatabase: 'admin',
     };
     const connString = urlBuilder.buildMongoConnString(config);
-    should(connString).be.equal(`mongodb://${config.user}:${config.password}@${config.host}:${config.port}/${config.db}?authSource=${config.authDatabase}`);
-    done();
+    expect(connString).toBe(`mongodb://${config.user}:${config.password}@${config.host}:${config.port}/${config.db}?authSource=${config.authDatabase}`);
   });
 
-  it('builds a replicaset url with two replicas', (done: Mocha.Done) => {
+  it('builds a replicaset url with two replicas', () => {
     const config = {
       user: 'someuser',
       password: 'somepass',
@@ -71,16 +66,15 @@ describe('Url Builder', () => {
       collection: '_migrations',
     };
     const connString = urlBuilder.buildMongoConnString(config);
-    should(connString).be.equal(
+    expect(connString).toBe(
       `mongodb://${config.user}:${config.password}@` +
       `${config.replicaset.members[0].host}:${config.replicaset.members[0].port},` +
       `${config.replicaset.members[1].host}:${config.replicaset.members[1].port}/` +
       `${config.db}?replicaSet=${config.replicaset.name}`
     );
-    done();
   });
 
-  it('builds a replicaset url with three replicas', (done: Mocha.Done) => {
+  it('builds a replicaset url with three replicas', () => {
     const config = {
       user: 'someuser',
       password: 'somepass',
@@ -96,13 +90,12 @@ describe('Url Builder', () => {
       collection: '_migrations',
     };
     const connString = urlBuilder.buildMongoConnString(config);
-    should(connString).be.equal(
+    expect(connString).toBe(
       `mongodb://${config.user}:${config.password}@` +
       `${config.replicaset.members[0].host}:${config.replicaset.members[0].port},` +
       `${config.replicaset.members[1].host}:${config.replicaset.members[1].port},` +
       `${config.replicaset.members[2].host}:${config.replicaset.members[2].port}/` +
       `${config.db}?replicaSet=${config.replicaset.name}`
     );
-    done();
   });
 });

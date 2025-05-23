@@ -1,5 +1,4 @@
-import 'mocha';
-import 'should';
+import { describe, it, beforeEach, expect } from 'vitest';
 import { Collection, Db } from 'mongodb';
 import { Migrator } from '../src/mongodb-migrations';
 import { beforeEach as commonBeforeEach } from './common';
@@ -38,27 +37,22 @@ describe('Migrator Errors Handling', () => {
       up: async () => {}
     });
 
-    try {
-      const res = await migrator.migrate();
-      throw new Error('Should have failed');
-    } catch (err) {
-      String(err).should.endWith('Some error');
+    await expect(migrator.migrate()).rejects.toThrow(/Some error$/);
 
-      // The results should still be available on the migrator
-      const res = migrator['_result'];
-      (res as any).should.be.ok();
+    // The results should still be available on the migrator
+    const res = migrator['_result'];
+    expect(res).toBeDefined();
 
-      (res['1'] as any).should.be.ok();
-      res['1'].status.should.be.equal('ok');
+    expect(res['1']).toBeDefined();
+    expect(res['1'].status).toBe('ok');
 
-      (res['2'] as any).should.be.ok();
-      res['2'].status.should.be.equal('ok');
+    expect(res['2']).toBeDefined();
+    expect(res['2'].status).toBe('ok');
 
-      (res['3'] as any).should.be.ok();
-      res['3'].status.should.be.equal('error');
-      res['3'].error!.toString().should.endWith('Some error');
+    expect(res['3']).toBeDefined();
+    expect(res['3'].status).toBe('error');
+    expect(res['3'].error!.toString()).toMatch(/Some error$/);
 
-      (!res['4']).should.be.ok();
-    }
+    expect(res['4']).toBeUndefined();
   });
 });
