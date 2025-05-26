@@ -1,5 +1,3 @@
-import _ from 'lodash';
-
 interface ReplicasetConfig {
   name: string;
   members: Array<{ host: string; port?: number }>;
