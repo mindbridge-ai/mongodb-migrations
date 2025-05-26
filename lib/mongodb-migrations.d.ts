@@ -1,7 +1,7 @@
 import Promise from 'bluebird';
 import { Db, MongoClient } from 'mongodb-legacy';
 import { MongoConfig } from './url-builder';
-type LogLevel = 'system' | 'user';
+export type LogLevel = 'system' | 'user';
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
 type MigrationCallback = (error?: Error) => void;
 type MigrationFunction = ((this: MigrationContext) => Promise<void>) | ((this: MigrationContext, done: MigrationCallback) => void);
