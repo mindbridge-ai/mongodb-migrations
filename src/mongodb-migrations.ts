@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import Promise from 'bluebird';
 import _ from 'lodash';
 import { Db, Collection, MongoClient, Document, WithId, AnyError, Callback, InsertOneResult, DeleteResult } from 'mongodb-legacy';
 import { repeatString, connect as mongoConnect, normalizeConfig } from './utils';
@@ -73,9 +72,7 @@ export class Migrator {
     this._m = [];
     this._result = {};
 
-    this._dbReady = (Promise.fromCallback as any)((cb: (error?: Error) => void) => {
-      mongoConnect(dbConfig, cb);
-    }).then((client: MongoClient) => {
+    this._dbReady = mongoConnect(dbConfig).then((client: MongoClient) => {
       this._client = client;
       this._db = client.db();
     });
@@ -157,18 +154,8 @@ export class Migrator {
 
     const handleMigrationDone = (id: string): void => {
       const p = direction === 'up'
-        ? (Promise.fromCallback as any)((cb: Callback<InsertOneResult<Document>>) => {
-            migrationsCollection.insertOne({ id }).then(
-              result => cb(undefined, result),
-              err => cb(err)
-            );
-          })
-        : (Promise.fromCallback as any)((cb: Callback<DeleteResult>) => {
-            migrationsCollection.deleteMany({ id }).then(
-              result => cb(undefined, result),
-              err => cb(err)
-            );
-          });
+        ? migrationsCollection.insertOne({ id })
+        : migrationsCollection.deleteMany({ id });
 
       migrationsCollectionUpdatePromises.push(p);
     };
@@ -362,16 +349,9 @@ export class Migrator {
     });
   }
 
-  dispose(cb?: (error?: Error) => void): void {
+  async dispose(): Promise<void> {
     this._isDisposed = true;
-    const onSuccess = (): void => {
-      try {
-        this._client.close();
-        cb?.(undefined);
-      } catch (e: any) {
-        cb?.(e);
-      }
-    };
-    this._dbReady.then(onSuccess, cb);
+    await this._dbReady;
+    this._client.close();
   }
 }

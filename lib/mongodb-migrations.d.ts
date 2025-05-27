@@ -1,4 +1,3 @@
-import Promise from 'bluebird';
 import { Db, MongoClient } from 'mongodb-legacy';
 import { MongoConfig } from './url-builder';
 export type LogLevel = 'system' | 'user';
@@ -48,6 +47,6 @@ export declare class Migrator {
     private _loadMigrationFiles;
     runFromDir(dir: string, done: (error?: Error, results?: MigrationResults) => void, progress?: (id: string, result: MigrationResult) => void): void;
     create(dir: string, id: string, done: (error?: Error) => void, coffeeScript?: boolean): void;
-    dispose(cb?: (error?: Error) => void): void;
+    dispose(): Promise<void>;
 }
 export {};
