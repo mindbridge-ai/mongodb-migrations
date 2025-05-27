@@ -1,5 +1,4 @@
-import 'mocha';
-import 'should';
+import { describe, it, beforeEach, expect } from 'vitest';
 import path from 'path';
 import { Collection, Db } from 'mongodb';
 import { Migrator } from '../src/mongodb-migrations';
@@ -22,13 +21,13 @@ describe('Migrator Rollback', () => {
     
     await migrator.runFromDir(dir);
     let count = await migrationsCol.countDocuments();
-    count.should.be.equal(3);
+    expect(count).toBe(3);
     
     await migrator.rollback();
     count = await coll.countDocuments();
-    count.should.be.equal(0);
+    expect(count).toBe(0);
 
     count = await migrationsCol.countDocuments();
-    count.should.be.equal(0);
+    expect(count).toBe(0);
   });
 });

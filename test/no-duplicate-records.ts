@@ -1,5 +1,4 @@
-import 'mocha';
-import 'should';
+import { describe, it, beforeEach, expect } from 'vitest';
 import { Collection, Db } from 'mongodb';
 import { Migrator } from '../src/mongodb-migrations';
 import { beforeEach as commonBeforeEach } from './common';
@@ -29,19 +28,19 @@ describe('Migrations Collection', () => {
 
     await migrator.migrate();
     let count = await coll.countDocuments({ name: 'tobi' });
-    count.should.be.equal(1);
+    expect(count).toBe(1);
 
     count = await migrationColl.countDocuments({});
-    count.should.be.equal(1);
+    expect(count).toBe(1);
 
     // run again
     await migrator.migrate();
 
     count = await coll.countDocuments({ name: 'tobi' });
-    count.should.be.equal(1);
+    expect(count).toBe(1);
 
     count = await migrationColl.countDocuments({});
     // ensure that we didn't create the duplicate
-    count.should.be.equal(1);
+    expect(count).toBe(1);
   });
 });
