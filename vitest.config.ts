@@ -9,5 +9,7 @@ export default defineConfig({
     testTimeout: 2000,
     // The tests are sharing the same database collections so can't run in parallel.
     fileParallelism: false,
+    // But we don't need an isolated environment for each test.
+    isolate: false,
   },
 })
