@@ -1,4 +1,5 @@
-import { MongoClient } from 'mongodb-legacy';
+import { MongoClient } from 'mongodb';
+import { MongoConfig } from './types';
 import * as urlBuilder from './url-builder';
 import _ from 'lodash';
 
@@ -23,7 +24,7 @@ export function _buildOptions(config: any): any {
   return options;
 }
 
-function validateConnSettings(config: any): void {
+function validateConnSettings(config: MongoConfig): void {
   if (config.url) return;
   const { replicaset } = config;
   if (!replicaset) {
@@ -40,7 +41,7 @@ function validateConnSettings(config: any): void {
     if (!Array.isArray(replicaset.members)) {
       throw new Error('`replicaset.members` is not set or is not an array');
     }
-    replicaset.members.forEach((m: any) => {
+    replicaset.members.forEach(m => {
       if (!m?.host) {
         throw new Error('each of `replicaset.members` must have `host` set');
       }
@@ -57,7 +58,7 @@ function validateConnSettings(config: any): void {
   }
 }
 
-export function normalizeConfig(config: any): any {
+export function normalizeConfig(config: MongoConfig): MongoConfig {
   if (!(typeof config === 'object' && !Array.isArray(config))) {
     throw new Error('`config` is not provided or is not an object');
   }
@@ -66,16 +67,10 @@ export function normalizeConfig(config: any): any {
   return config;
 }
 
-export function connect(config: any, cb: (error?: any, result?: any) => void): void;
-export function connect(config: any): Promise<any>;
-export function connect(config: any, cb?: (error?: any, result?: any) => void): any {
+export function connect(config: MongoConfig): Promise<MongoClient> {
   const options = _buildOptions(config);
   const url = urlBuilder.buildMongoConnString(config);
-  if (cb) {
-    MongoClient.connect(url, options, cb);
-  } else {
-    return MongoClient.connect(url, options);
-  }
+  return MongoClient.connect(url, options);
 }
 
 export function repeatString(str: string, n: number): string {

@@ -1,7 +1,7 @@
 import 'mocha';
 import 'should';
 import path from 'path';
-import { Collection, Db } from 'mongodb-legacy';
+import { Collection, Db } from 'mongodb';
 import { Migrator } from '../src/mongodb-migrations';
 import { beforeEach as commonBeforeEach } from './common';
 
@@ -16,29 +16,19 @@ describe('Migrator Rollback', () => {
     await coll.deleteMany({});
   });
 
-  it('should cleanup the migrations collection properly', (done: Mocha.Done) => {
+  it('should cleanup the migrations collection properly', async () => {
     const dir = path.join(__dirname, 'migrations');
     const migrationsCol = db.collection('_migrations');
-    migrator.runFromDir(dir, (err) => {
-      if (err) return done(err);
-      migrationsCol.find().count((err, count) => {
-        if (err) return done(err);
-        count!.should.be.equal(3);
-        
-        migrator.rollback((err) => {
-          if (err) return done(err);
-          coll.find().count((err, count) => {
-            if (err) return done(err);
-            count!.should.be.equal(0);
+    
+    await migrator.runFromDir(dir);
+    let count = await migrationsCol.countDocuments();
+    count.should.be.equal(3);
+    
+    await migrator.rollback();
+    count = await coll.countDocuments();
+    count.should.be.equal(0);
 
-            migrationsCol.find().count((err, count) => {
-              if (err) return done(err);
-              count!.should.be.equal(0);
-              done();
-            });
-          });
-        });
-      });
-    });
+    count = await migrationsCol.countDocuments();
+    count.should.be.equal(0);
   });
 });

@@ -1,7 +1,7 @@
 import 'mocha';
 import 'should';
 import path from 'path';
-import { Collection, Db } from 'mongodb-legacy';
+import { Collection, Db } from 'mongodb';
 import { Migrator } from '../src/mongodb-migrations';
 import { beforeEach as commonBeforeEach } from './common';
 
@@ -16,34 +16,21 @@ describe('Migrator from Directory', () => {
     await coll.deleteMany({});
   });
 
-  it('should run migrations from directory', (done: Mocha.Done) => {
+  it('should run migrations from directory', async () => {
     const dir = path.join(__dirname, 'migrations');
-    migrator.runFromDir(dir, (err, res) => {
-      if (err) return done(err);
-      
-      coll.find({ name: 'tobi' }).count((err, count) => {
-        if (err) return done(err);
-        count!.should.be.equal(1);
+    const res = await migrator.runFromDir(dir);
+    
+    let count = await coll.countDocuments({ name: 'tobi' });
+    count.should.be.equal(1);
 
-        coll.find({ name: 'loki' }).count((err, count) => {
-          if (err) return done(err);
-          count!.should.be.equal(1);
+    count = await coll.countDocuments({ name: 'loki' });
+    count.should.be.equal(1);
 
-          coll.find({ ok: 1 }).count((err, count) => {
-            if (err) return done(err);
-            count!.should.be.equal(2);
+    count = await coll.countDocuments({ ok: 1 });
+    count.should.be.equal(2);
 
-            migrator.rollback((err) => {
-              if (err) return done(err);
-              coll.find().count((err, count) => {
-                if (err) return done(err);
-                count!.should.be.equal(0);
-                done();
-              });
-            });
-          });
-        });
-      });
-    });
+    await migrator.rollback();
+    count = await coll.countDocuments();
+    count.should.be.equal(0);
   });
 });

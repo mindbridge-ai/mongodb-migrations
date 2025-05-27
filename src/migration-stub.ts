@@ -1,29 +1,13 @@
-function migrationStub(id: string, coffeeScript: boolean): string {
-  if (coffeeScript) {
-    return `module.exports.id = "${id}"
-
-module.exports.up = (done) ->
-  # use @db for MongoDB communication, and @log() for logging
-  done()
-
-module.exports.down = (done) ->
-  # use @db for MongoDB communication, and @log() for logging
-  done()`;
-  } else {
+export function migrationStub(id: string): string {
     return `'use strict';
 
 module.exports.id = "${id}";
 
-module.exports.up = function (done) {
+module.exports.up = async function() {
   // use this.db for MongoDB communication, and this.log() for logging
-  done();
 };
 
-module.exports.down = function (done) {
+module.exports.down = async function() {
   // use this.db for MongoDB communication, and this.log() for logging
-  done();
 };`;
-  }
 }
-
-module.exports = migrationStub;

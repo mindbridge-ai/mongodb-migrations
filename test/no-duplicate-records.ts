@@ -1,6 +1,6 @@
 import 'mocha';
 import 'should';
-import { Collection, Db } from 'mongodb-legacy';
+import { Collection, Db } from 'mongodb';
 import { Migrator } from '../src/mongodb-migrations';
 import { beforeEach as commonBeforeEach } from './common';
 
@@ -19,41 +19,29 @@ describe('Migrations Collection', () => {
     await coll.deleteMany({});
   });
 
-  it('should run migrations and only record them once', (done: Mocha.Done) => {
+  it('should run migrations and only record them once', async () => {
     migrator.add({
       id: 'm1',
-      up: (cb) => {
-        coll.insertOne({ name: 'tobi' }, cb);
+      up: async () => {
+        await coll.insertOne({ name: 'tobi' });
       }
     });
 
-    migrator.migrate((err) => {
-      if (err) return done(err);
-      coll.find({ name: 'tobi' }).count((err, count) => {
-        if (err) return done(err);
-        count!.should.be.equal(1);
+    await migrator.migrate();
+    let count = await coll.countDocuments({ name: 'tobi' });
+    count.should.be.equal(1);
 
-        migrationColl.find({}).count((err, count) => {
-          if (err) return done(err);
-          count!.should.be.equal(1);
+    count = await migrationColl.countDocuments({});
+    count.should.be.equal(1);
 
-          // run again
-          migrator.migrate((err) => {
-            if (err) return done(err);
-            coll.find({ name: 'tobi' }).count((err, count) => {
-              if (err) return done(err);
-              count!.should.be.equal(1);
+    // run again
+    await migrator.migrate();
 
-              migrationColl.find({}).count((err, count) => {
-                if (err) return done(err);
-                // ensure that we didn't create the duplicate
-                count!.should.be.equal(1);
-                done();
-              });
-            });
-          });
-        });
-      });
-    });
+    count = await coll.countDocuments({ name: 'tobi' });
+    count.should.be.equal(1);
+
+    count = await migrationColl.countDocuments({});
+    // ensure that we didn't create the duplicate
+    count.should.be.equal(1);
   });
 });

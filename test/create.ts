@@ -15,24 +15,11 @@ describe('Migrations Builder', () => {
     await rimraf(dir);
   });
 
-  it('should create migration stubs for JS', (done: Mocha.Done) => {
-    migrator.create(dir, 'test1', (err) => {
-      if (err) return done(err);
-      fs.existsSync(path.join(dir, '1-test1.js')).should.be.ok();
-      
-      migrator.create(dir, 'test2', (err) => {
-        if (err) return done(err);
-        fs.existsSync(path.join(dir, '2-test2.js')).should.be.ok();
-        done();
-      });
-    });
-  });
-
-  it('should create migration stubs for Coffee', (done: Mocha.Done) => {
-    migrator.create(dir, 'test1', (err) => {
-      if (err) return done(err);
-      fs.existsSync(path.join(dir, '1-test1.coffee')).should.be.ok();
-      done();
-    }, true);
+  it('should create migration stubs for JS', () => {
+    migrator.create(dir, 'test1');
+    fs.existsSync(path.join(dir, '1-test1.js')).should.be.ok();
+    
+    migrator.create(dir, 'test2');
+    fs.existsSync(path.join(dir, '2-test2.js')).should.be.ok();
   });
 });

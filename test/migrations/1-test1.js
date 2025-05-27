@@ -1,11 +1,11 @@
 exports.id = 'test1';
 
-exports.up = function (done) {
-  var coll = this.db.collection('test');
-  coll.insertOne({ name: 'tobi' }, done);
+exports.up = async function() {
+  const coll = this.db.collection('test');
+  await coll.insertOne({ name: 'tobi' });
 };
 
-exports.down = function (done) {
-  var coll = this.db.collection('test');
-  coll.deleteMany({}, done);
+exports.down = async function() {
+  const coll = this.db.collection('test');
+  await coll.deleteMany({});
 };

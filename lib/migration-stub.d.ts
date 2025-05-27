@@ -1,1 +1,1 @@
-declare function migrationStub(id: string, coffeeScript: boolean): string;
+export declare function migrationStub(id: string): string;
