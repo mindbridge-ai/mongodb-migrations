@@ -40,7 +40,7 @@ describe("Migrator Errors Handling", () => {
         await expect(migrator.migrate()).rejects.toThrow(/Some error$/);
 
         // The results should still be available on the migrator
-        const res = migrator["_result"];
+        const res = migrator["resultsByMigrationId"];
         expect(res).toBeDefined();
 
         expect(res["1"]).toBeDefined();
