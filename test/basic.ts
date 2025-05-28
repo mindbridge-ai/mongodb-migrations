@@ -26,7 +26,7 @@ describe("Migrator", () => {
             db: "_mm",
         };
         const m1 = new Migrator(config1, null);
-        expect((m1 as any)._collName).toBe("_migrations");
+        expect((m1 as any).collName).toBe("_migrations");
 
         const config2 = {
             host: "localhost",
@@ -35,7 +35,7 @@ describe("Migrator", () => {
             collection: "_custom",
         };
         const m2 = new Migrator(config2, null);
-        expect((m2 as any)._collName).toBe("_custom");
+        expect((m2 as any).collName).toBe("_custom");
     });
 
     it("should run migrations and return result", async () => {

@@ -42,33 +42,33 @@ interface MigrationContext {
 }
 
 export class Migrator {
-    private _isDisposed: boolean;
-    private _m: Migration[];
-    private _result: MigrationResults;
-    private _dbReady: Promise<void>;
-    private _db!: Db;
-    private _client!: MongoClient;
-    private _collName: string;
-    private _timeout?: number;
-    private _ranMigrations: { [key: string]: boolean } = {};
-    private _lastDirection?: "up" | "down";
+    private disposed: boolean;
+    private migrations: Migration[];
+    private resultsByMigrationId: MigrationResults;
+    private dbReady: Promise<void>;
+    private db!: Db;
+    private client!: MongoClient;
+    private collName: string;
+    private timeout?: number;
+    private ranMigrations: { [key: string]: boolean } = {};
+    private lastDirection?: "up" | "down";
     private log: LogFunction;
 
     constructor(dbConfig: MongoConfig, logFn?: LogFunction) {
         // this will throw in case of invalid values
         dbConfig = normalizeConfig(dbConfig);
 
-        this._isDisposed = false;
-        this._m = [];
-        this._result = {};
+        this.disposed = false;
+        this.migrations = [];
+        this.resultsByMigrationId = {};
 
-        this._dbReady = mongoConnect(dbConfig).then((client: MongoClient) => {
-            this._client = client;
-            this._db = client.db();
+        this.dbReady = mongoConnect(dbConfig).then((client: MongoClient) => {
+            this.client = client;
+            this.db = client.db();
         });
 
-        this._collName = dbConfig.collection!;
-        this._timeout = dbConfig.timeout;
+        this.collName = dbConfig.collection!;
+        this.timeout = dbConfig.timeout;
 
         if (logFn || logFn === null) {
             this.log = logFn;
@@ -78,48 +78,48 @@ export class Migrator {
     }
 
     add(m: Migration): void {
-        this._m.push(m);
+        this.migrations.push(m);
     }
 
     bulkAdd(array: Migration[]): void {
-        this._m = this._m.concat(array);
+        this.migrations = this.migrations.concat(array);
     }
 
-    private _coll(): Collection<Document> {
-        return this._db.collection(this._collName);
+    private coll(): Collection<Document> {
+        return this.db.collection(this.collName);
     }
 
-    private async _runWhenReady(
+    private async runWhenReady(
         direction: "up" | "down",
         progress?: (id: string, result: MigrationResult) => void
     ): Promise<MigrationResults> {
-        if (this._isDisposed) {
+        if (this.disposed) {
             throw new Error("This migrator is disposed and cannot be used anymore");
         }
-        await this._dbReady;
-        this._ranMigrations = {};
-        const docs = await this._coll().find().toArray();
+        await this.dbReady;
+        this.ranMigrations = {};
+        const docs = await this.coll().find().toArray();
         for (const doc of docs) {
-            this._ranMigrations[doc.id] = true;
+            this.ranMigrations[doc.id] = true;
         }
-        return this._run(direction, progress);
+        return this.run(direction, progress);
     }
 
-    private async _run(direction: "up" | "down", progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
+    private async run(direction: "up" | "down", progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
         let m: Migration[];
         if (direction === "down") {
-            m = this._m
+            m = this.migrations
                 .reverse()
                 .filter((m) => {
-                    const _r = this._result[m.id]?.status;
-                    return _r && _r !== "skip";
+                    const status = this.resultsByMigrationId[m.id]?.status;
+                    return status && status !== "skip";
                 });
         } else {
             direction = "up";
-            this._result = {};
-            m = this._m;
+            this.resultsByMigrationId = {};
+            m = this.migrations;
         }
-        this._lastDirection = direction;
+        this.lastDirection = direction;
 
         const logFn = this.log;
         const log = (src: LogLevel) => {
@@ -130,11 +130,11 @@ export class Migrator {
         const userLog = log("user");
         const systemLog = log("system");
 
-        const migrationsCollection = this._coll();
+        const migrationsCollection = this.coll();
 
         for (const migration of m) {
             const migrationDone = async (res: MigrationResult): Promise<void> => {
-                this._result[migration.id] = res;
+                this.resultsByMigrationId[migration.id] = res;
                 progress?.(migration.id, res);
                 let msg = `Migration '${migration.id}': ${res.status}`;
                 if (res.status === "skip") {
@@ -145,7 +145,7 @@ export class Migrator {
                     systemLog("  " + res.error);
                 }
                 if (res.status === "ok" || (res.status === "skip" && (res.code === "no_up" || res.code === "no_down"))) {
-                    await this._updateMigrationRecord(direction, migration.id);
+                    await this.updateMigrationRecord(direction, migration.id);
                 }
             };
 
@@ -158,11 +158,11 @@ export class Migrator {
                 skipReason = `no migration function for direction ${direction}`;
                 skipCode = `no_${direction}` as "no_up" | "no_down";
             }
-            if (direction === "up" && id in this._ranMigrations) {
+            if (direction === "up" && id in this.ranMigrations) {
                 skipReason = "migration already ran";
                 skipCode = "already_ran";
             }
-            if (direction === "down" && !(id in this._result)) {
+            if (direction === "down" && !(id in this.resultsByMigrationId)) {
                 skipReason = "migration wasn't in the recent `migrate` run";
                 skipCode = "not_in_recent_migrate";
             }
@@ -171,17 +171,17 @@ export class Migrator {
                 continue;
             }
 
-            const context: MigrationContext = { db: this._db, log: userLog, client: this._client };
+            const context: MigrationContext = { db: this.db, log: userLog, client: this.client };
             let timeoutId;
 
             const migrationAndTimeoutPromise = Promise.race([
                 fn!.call(context),
-                ...(this._timeout
+                ...(this.timeout
                     ? [
                           new Promise((_, reject) => {
                               timeoutId = setTimeout(() => {
                                   reject(new Error("migration timed-out"));
-                              }, this._timeout);
+                              }, this.timeout);
                           }),
                       ]
                     : []),
@@ -205,29 +205,29 @@ export class Migrator {
             }
         }
 
-        return this._result;
+        return this.resultsByMigrationId;
     }
 
-    async _updateMigrationRecord(direction: "up" | "down", id: string): Promise<void> {
+    private async updateMigrationRecord(direction: "up" | "down", id: string): Promise<void> {
         if (direction === "up") {
-            await this._coll().insertOne({ id });
+            await this.coll().insertOne({ id });
         } else {
-            await this._coll().deleteMany({ id });
+            await this.coll().deleteMany({ id });
         }
     }
 
     async migrate(progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
-        return this._runWhenReady("up", progress);
+        return this.runWhenReady("up", progress);
     }
 
     async rollback(progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
-        if (this._lastDirection !== "up") {
+        if (this.lastDirection !== "up") {
             throw new Error("Rollback can only be ran after migrate");
         }
-        return this._runWhenReady("down", progress);
+        return this.runWhenReady("down", progress);
     }
 
-    private _loadMigrationFiles(dir: string): Array<{ number: number | null; module: any }> {
+    private loadMigrationFiles(dir: string): Array<{ number: number | null; module: any }> {
         fs.mkdirSync(dir, { recursive: true, mode: 0o0774 });
         const files = fs.readdirSync(dir);
 
@@ -247,19 +247,19 @@ export class Migrator {
     }
 
     async runFromDir(dir: string, progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
-        const files = this._loadMigrationFiles(dir);
+        const files = this.loadMigrationFiles(dir);
         this.bulkAdd(files.map(f => f.module))
         return await this.migrate(progress);
     }
 
     async runOne(migration: Migration, direction: "up" | "down" = "up"): Promise<MigrationResult> {
         this.add(migration);
-        const results = await this._runWhenReady(direction);
+        const results = await this.runWhenReady(direction);
         return results[migration.id];
     }
 
     create(dir: string, id: string): void {
-        const files = this._loadMigrationFiles(dir);
+        const files = this.loadMigrationFiles(dir);
         const maxNum = _.maxBy(files, "number")?.number ?? 0;
         const nextNum = maxNum + 1;
         const slug = (id || "").toLowerCase().replace(/\s+/, "-");
@@ -270,8 +270,8 @@ export class Migrator {
     }
 
     async dispose(): Promise<void> {
-        this._isDisposed = true;
-        await this._dbReady;
-        this._client.close();
+        this.disposed = true;
+        await this.dbReady;
+        this.client.close();
     }
 }
