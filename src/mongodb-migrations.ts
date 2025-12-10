@@ -5,6 +5,8 @@ import { Db, Collection, MongoClient, Document, WithId, AnyError, InsertOneResul
 import { repeatString, connect as mongoConnect, normalizeConfig } from "./utils";
 import { MongoConfig } from "./types";
 import { migrationStub } from "./migration-stub";
+import { glob } from "glob";
+
 
 export type LogLevel = "system" | "user";
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
@@ -227,12 +229,10 @@ export class Migrator {
         return this.runWhenReady("down", progress);
     }
 
-    private loadMigrationFiles(dir: string): Array<{ number: number | null; module: any }> {
-        fs.mkdirSync(dir, { recursive: true, mode: 0o0774 });
-        const files = fs.readdirSync(dir);
+    private loadMigrationFiles(pattern: string): Array<{ number: number | null; module: any }> {
 
-        return files
-            .filter((f) => [".js"].includes(path.extname(f)) && !f.startsWith("."))
+        return glob
+            .sync(pattern)
             .map((f) => {
                 const n = f.match(/^(\d+)/)?.[1];
                 const number = n ? parseInt(n, 10) : null;
@@ -247,7 +247,7 @@ export class Migrator {
     }
 
     async runFromDir(dir: string, progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
-        const files = this.loadMigrationFiles(dir);
+        const files = this.loadMigrationFiles(path.join(dir, "*.js");
         this.bulkAdd(files.map(f => f.module))
         return await this.migrate(progress);
     }
@@ -259,7 +259,8 @@ export class Migrator {
     }
 
     create(dir: string, id: string): void {
-        const files = this.loadMigrationFiles(dir);
+        fs.mkdirSync(dir, { recursive: true, mode: 0o0774 });
+        const files = this.loadMigrationFiles("*.js");
         const maxNum = _.maxBy(files, "number")?.number ?? 0;
         const nextNum = maxNum + 1;
         const slug = (id || "").toLowerCase().replace(/\s+/, "-");
