@@ -44,7 +44,10 @@ export declare class Migrator {
     private updateMigrationRecord;
     migrate(progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults>;
     rollback(progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults>;
-    private loadMigrationFiles;
+    loadMigrationFiles(pattern: string): Array<{
+        number: number | null;
+        module: any;
+    }>;
     runFromDir(dir: string, progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults>;
     runOne(migration: Migration, direction?: "up" | "down"): Promise<MigrationResult>;
     create(dir: string, id: string): void;

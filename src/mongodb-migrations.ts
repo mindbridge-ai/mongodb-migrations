@@ -5,6 +5,8 @@ import { Db, Collection, MongoClient, Document, WithId, AnyError, InsertOneResul
 import { repeatString, connect as mongoConnect, normalizeConfig } from "./utils";
 import { MongoConfig } from "./types";
 import { migrationStub } from "./migration-stub";
+import { glob } from "glob";
+
 
 export type LogLevel = "system" | "user";
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
@@ -227,27 +229,19 @@ export class Migrator {
         return this.runWhenReady("down", progress);
     }
 
-    private loadMigrationFiles(dir: string): Array<{ number: number | null; module: any }> {
-        fs.mkdirSync(dir, { recursive: true, mode: 0o0774 });
-        const files = fs.readdirSync(dir);
-
-        return files
-            .filter((f) => [".js"].includes(path.extname(f)) && !f.startsWith("."))
-            .map((f) => {
-                const n = f.match(/^(\d+)/)?.[1];
-                const number = n ? parseInt(n, 10) : null;
-                return { number, name: f };
+    loadMigrationFiles(pattern: string): Array<{ number: number | null; module: any }> {
+        return glob
+            .sync(pattern, { absolute: true })
+            .map((filePath) => {
+                const numberText = path.basename(filePath).match(/^(\d+)/)?.[1];
+                const number = numberText ? parseInt(numberText, 10) : null;
+                return { number, module: require(filePath) };
             })
-            .filter((f) => !!f.name)
-            .sort((f1, f2) => (f1.number || 0) - (f2.number || 0))
-            .map((f) => {
-                const fileName = path.join(dir, f.name);
-                return { number: f.number, module: require(fileName) };
-            });
+            .sort((item1, item2) => (item1.number || 0) - (item2.number || 0));
     }
 
     async runFromDir(dir: string, progress?: (id: string, result: MigrationResult) => void): Promise<MigrationResults> {
-        const files = this.loadMigrationFiles(dir);
+        const files = this.loadMigrationFiles(path.join(dir, "*.js"));
         this.bulkAdd(files.map(f => f.module))
         return await this.migrate(progress);
     }
@@ -259,7 +253,8 @@ export class Migrator {
     }
 
     create(dir: string, id: string): void {
-        const files = this.loadMigrationFiles(dir);
+        fs.mkdirSync(dir, { recursive: true, mode: 0o0774 });
+        const files = this.loadMigrationFiles(path.join(dir, "*.js"));
         const maxNum = _.maxBy(files, "number")?.number ?? 0;
         const nextNum = maxNum + 1;
         const slug = (id || "").toLowerCase().replace(/\s+/, "-");
