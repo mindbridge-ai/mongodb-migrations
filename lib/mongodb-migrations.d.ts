@@ -2,23 +2,23 @@ import { Db, MongoClient } from "mongodb";
 import { MongoConfig } from "./types";
 export type LogLevel = "system" | "user";
 type LogFunction = ((level: LogLevel, message: string) => void) | null;
-type MigrationFunction = (this: MigrationContext) => Promise<void>;
-interface Migration {
+export type MigrationFunction = (this: MigrationContext) => Promise<void>;
+export interface Migration {
     id: string;
     up?: MigrationFunction;
     down?: MigrationFunction;
 }
-type MigrationStatus = "ok" | "skip" | "error";
-interface MigrationResult {
+export type MigrationStatus = "ok" | "skip" | "error";
+export interface MigrationResult {
     status: MigrationStatus;
     error?: Error;
     reason?: string;
     code?: "no_up" | "no_down" | "already_ran" | "not_in_recent_migrate";
 }
-interface MigrationResults {
+export interface MigrationResults {
     [key: string]: MigrationResult;
 }
-interface MigrationContext {
+export interface MigrationContext {
     db: Db;
     log: (message: string) => void;
     client: MongoClient;

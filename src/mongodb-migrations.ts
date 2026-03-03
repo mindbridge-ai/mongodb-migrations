@@ -16,28 +16,28 @@ const defaultLog = (src: LogLevel, ...args: any[]): void => {
     console.log(pad, ...args);
 };
 
-type MigrationFunction = (this: MigrationContext) => Promise<void>;
+export type MigrationFunction = (this: MigrationContext) => Promise<void>;
 
-interface Migration {
+export interface Migration {
     id: string;
     up?: MigrationFunction;
     down?: MigrationFunction;
 }
 
-type MigrationStatus = "ok" | "skip" | "error";
+export type MigrationStatus = "ok" | "skip" | "error";
 
-interface MigrationResult {
+export interface MigrationResult {
     status: MigrationStatus;
     error?: Error;
     reason?: string;
     code?: "no_up" | "no_down" | "already_ran" | "not_in_recent_migrate";
 }
 
-interface MigrationResults {
+export interface MigrationResults {
     [key: string]: MigrationResult;
 }
 
-interface MigrationContext {
+export interface MigrationContext {
     db: Db;
     log: (message: string) => void;
     client: MongoClient;
